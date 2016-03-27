@@ -1,0 +1,2 @@
+version=3
+https://github.com/mjsware/remote-terminal/tags .*/archive/[a-z](\d\S*)\.tar\.gz

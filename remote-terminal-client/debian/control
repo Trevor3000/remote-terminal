@@ -1,0 +1,14 @@
+Source: remote-terminal-client
+Section: Networking
+Priority: optional
+Maintainer: Matthew James <admin@mjsware.co.uk>
+Build-Depends: debhelper (>= 9), qtbase5-dev, qtbase5-dev-tools, qt5-qmake, libstdc++6, libcrypto++-dev
+Standards-Version: 3.9.6
+Homepage: http://www.mjsware.co.uk
+
+Package: remote-terminal-client
+Architecture: any
+Depends: libqt5gui5, libqt5widgets5, libqt5core5a, libqt5network5, libcrypto++9, ${misc:Depends}, ${shlibs:Depends}
+Description: 
+ Remote Terminal was created as a means of controlling GNU/Linux based machines remotely. It utilises the crypto++ library and Qt Framework to provide its features.
+
