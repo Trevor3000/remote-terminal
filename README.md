@@ -14,7 +14,7 @@ Remote Terminal [Client]:
 
 Remote Terminal [Server]:
 
-![Image of Remote Terminal [Server] (Version 0.1)] (http://www.mjsware.co.uk/Images/RTS_0.1.png)
+![Image of Remote Terminal [Server] (Version 0.1)] (http://www.mjsware.co.uk/Images/RTS-0.1.png)
 
 #### Current version
 
@@ -65,4 +65,4 @@ Use Qt Creator with Qt Framework (>= 5.3) to build the project.
  
 #### Support Libraries
  
- - [crypto++](https://www.cryptopp.com)
+ - [crypto++] (https://www.cryptopp.com)
