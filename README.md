@@ -10,11 +10,11 @@ It utilises the crypto++ library and Qt Framework to provide its features.
 
 Remote Terminal [Client]:
 
-![Image of Remote Terminal [Client] (Version 0.1)] (http://www.mjsware.co.uk/Images/RTC_0.1.png)
+![Image of Remote Terminal [Client] (Version 0.1)] (https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTC.png)
 
 Remote Terminal [Server]:
 
-![Image of Remote Terminal [Server] (Version 0.1)] (http://www.mjsware.co.uk/Images/RTS-0.1.png)
+![Image of Remote Terminal [Server] (Version 0.1)] (https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTS.png)
 
 #### Current version
 
