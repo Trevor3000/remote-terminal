@@ -1,4 +1,4 @@
-#Remote Terminal
+# Remote Terminal
 
 Remote Terminal was created as a means of controlling GNU/Linux based machines remotely. It utilises AES-256 bit encryption (CBC) to secure its transmissions via a shared encryption code. Both the client and server application must know the encryption code before successful communication can occur; if the encryption code is incorrect, the client will be disconnected.
 
@@ -10,11 +10,11 @@ It utilises the crypto++ library and Qt Framework to provide its features.
 
 Remote Terminal [Client]:
 
-![Image of Remote Terminal [Client] (Version 0.1)] (https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTC.png)
+![Image of Remote Terminal [Client] (Version 0.1)](https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTC.png)
 
 Remote Terminal [Server]:
 
-![Image of Remote Terminal [Server] (Version 0.1)] (https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTS.png)
+![Image of Remote Terminal [Server] (Version 0.1)](https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTS.png)
 
 #### Current version
 
