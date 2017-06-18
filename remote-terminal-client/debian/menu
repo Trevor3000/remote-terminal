@@ -1,4 +1,4 @@
 ?package(packagename):needs="x11" \
       section="Applications/Internet" \
-      title="Remote Terminal Client" \
+      title="Remote Terminal [Client]" \
       command="/usr/bin/RTC"

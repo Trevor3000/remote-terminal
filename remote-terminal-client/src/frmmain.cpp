@@ -1,5 +1,5 @@
 // This application is under GNU GPLv3. Please read the COPYING.txt file for further terms and conditions of the license.
-// Copyright © 2016 Matthew James 
+// Copyright © 2017 Matthew James
 // "Remote Terminal" is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
@@ -7,62 +7,56 @@
 #include "frmmain.h"
 #include "ui_frmmain.h"
 
-frmMain::frmMain(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::frmMain)
+frmMain::frmMain(QWidget *parent) : QMainWindow(parent), ui(new Ui::frmMain)
 {
     ui->setupUi(this);
 
     LoadWindowSettings();
 
-    // Button clicks
-    connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(btnConnect_click()));
+    connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(btnConnect_Click()));
     connect(ui->btnSend, SIGNAL(clicked(bool)),this, SLOT(SendCommands()));
     connect(ui->btnClearLog, SIGNAL(clicked(bool)),this, SLOT(ClearLog()));
-
-    // Text change
-    connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(txtCommand_textChanged()));
-
-    // Menu clicks
+    connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(txtCommand_TextChanged()));
     connect(ui->itemExit,SIGNAL(triggered()),this,SLOT(CloseApplication()));
     connect(ui->itemAboutRemoteTerminal,SIGNAL(triggered()),this,SLOT(itemAboutRemoteTerminal()));
     connect(ui->itemWebsite,SIGNAL(triggered()),this,SLOT(itemViewWebsite()));
+    connect(&messageTimer, SIGNAL(timeout()), this, SLOT(CheckMessages()));
 
-    // Message timer
-    connect(&message_timer, SIGNAL(timeout()), this, SLOT(CheckMessages()));
+    this->aboutForm = 0;
+    this->crypto = 0;
 }
 
 // Events
 
-void frmMain::keyPressEvent(QKeyEvent* pe)
+void frmMain::keyPressEvent(QKeyEvent* pressedEvent)
 {
-    if(pe->key() == Qt::Key_Return)
+    if(pressedEvent->key() == Qt::Key_Return)
     {
         SendCommands();
     }
-    else if(pe->key() == Qt::Key_Up) // Show recent command history
+    else if(pressedEvent->key() == Qt::Key_Up) // Show recent command history
     {
-        command_index += 1;
+        this->commandIndex += 1;
 
-        if(commands.count() > command_index)
+        if(this->commands.count() > this->commandIndex)
         {
-            ui->txtCommand->setText(commands.at(command_index));
+            ui->txtCommand->setText(this->commands.at(this->commandIndex));
         }
         else
         {
-            command_index = commands.count() - 1;
+            this->commandIndex = this->commands.count() - 1;
         }
     }
-    else if(pe->key() == Qt::Key_Down) // Show past command history
+    else if(pressedEvent->key() == Qt::Key_Down) // Show past command history
     {
-        if(command_index >= 0 && commands.count() > command_index)
+        if(this->commandIndex >= 0 && this->commands.count() > this->commandIndex)
         {
-            ui->txtCommand->setText(commands.at(command_index));
-            command_index -= 1;
+            ui->txtCommand->setText(this->commands.at(this->commandIndex));
+            this->commandIndex -= 1;
         }
         else
         {
-            command_index = 0;
+            this->commandIndex = 0;
         }
     }
 }
@@ -82,36 +76,35 @@ void frmMain::closeEvent(QCloseEvent*)
     SaveWindowSettings();
 }
 
-void frmMain::txtCommand_textChanged()
+void frmMain::txtCommand_TextChanged()
 {
-    if(ui->txtCommand->text().length() > 0)
-    {
-        ui->btnSend->setEnabled(true);
-    }
-    else
-    {
-        ui->btnSend->setEnabled(false);
-    }
+    ui->btnSend->setEnabled(ui->txtCommand->text().length() > 0);
 }
 
 void frmMain::CloseApplication()
 {
+    if(TCPClient::IsConnected())
+        Disconnect();
+
     this->close();
 }
 
 void frmMain::itemAboutRemoteTerminal()
 {
-    aboutForm = new frmAbout();
-    aboutForm->move(this->rect().center() - aboutForm->rect().center());
-    aboutForm->show();
+    if(this->aboutForm)
+        delete this->aboutForm;
+
+    this->aboutForm = new frmAbout();
+    this->aboutForm->move(this->rect().center() - this->aboutForm->rect().center());
+    this->aboutForm->show();
 }
 
 void frmMain::itemViewWebsite()
 {
-    QDesktopServices::openUrl(QUrl("http://www.mjsware.co.uk"));
+    QDesktopServices::openUrl(QUrl("https://github.com/mjsware/remote-terminal"));
 }
 
-void frmMain::btnConnect_click()
+void frmMain::btnConnect_Click()
 {
     if(TCPClient::IsConnected())
     {
@@ -127,13 +120,11 @@ frmMain::~frmMain()
 {
     SaveWindowSettings();
 
-    if(crypto){
-        delete crypto;
-    }
+    if(this->crypto)
+        delete this->crypto;
 
-    if(crypto){
-        delete aboutForm;
-    }
+    if(this->aboutForm)
+        delete this->aboutForm;
 
     delete ui;
 }
@@ -142,7 +133,7 @@ frmMain::~frmMain()
 
 void frmMain::LoadWindowSettings()
 {
-    QSettings qSettings("Matthew James", "Remote Terminal Client");
+    QSettings qSettings("Matthew James", "Remote Terminal [Client]");
 
     qSettings.beginGroup("frmMain");
 
@@ -159,7 +150,7 @@ void frmMain::LoadWindowSettings()
 
 void frmMain::SaveWindowSettings()
 {
-    QSettings qSettings("Matthew James", "Remote Terminal Client");
+    QSettings qSettings("Matthew James", "Remote Terminal [Client]");
 
     qSettings.beginGroup("frmMain");
 
@@ -167,11 +158,11 @@ void frmMain::SaveWindowSettings()
     qSettings.setValue("save_state", saveState());
     qSettings.setValue("maximised", isMaximized());
 
-    if (!isMaximized()) {
+    if (!isMaximized())
+    {
         qSettings.setValue("pos", pos());
         qSettings.setValue("size", size());
     }
-
     qSettings.endGroup();
 }
 
@@ -182,103 +173,87 @@ void frmMain::ClearLog()
 
 void frmMain::Connect()
 {
-    if(ui->txtIPHost->text().length() > 0)
+    if(ui->txtIPHost->text().length() > 0 && ui->txtEncryptionCode->text().length() > 0 && ui->txtPort->text().length() > 0)
     {
-        if(ui->txtEncryptionCode->text().length() > 0)
+        if(TCPClient::Connect(ui->txtIPHost->text().toStdString(), ui->txtPort->text().toInt()))
         {
-            if(ui->txtPort->text().length() > 0)
-            {
-                QString ip_address = ui->txtIPHost->text();
-                int port = ui->txtPort->text().toInt();
+            this->commandIndex = -1;
+            this->commands.clear();
 
-                if(TCPClient::Connect(ip_address.toStdString(), port))
-                {
-                    command_index = -1;
-                    commands.clear();
+            if(this->crypto)
+                delete this->crypto;
 
-                    crypto = new Crypto(ui->txtEncryptionCode->text().toStdString());
+            this->crypto = new Crypto(ui->txtEncryptionCode->text().toStdString());
 
-                    ui->lblStatus->setText("Connected!");
-                    ui->btnConnect->setText("Disconnect");
-                    ui->txtCommand->setEnabled(true);
-
-                    ui->txtIPHost->setEnabled(false);
-                    ui->txtPort->setEnabled(false);
-                    ui->txtEncryptionCode->setEnabled(false);
-
-                    this->message_timer.start(1000);
-                }
-            }
+            ui->lblStatus->setText("Connected!");
+            ui->btnConnect->setText("Disconnect");
+            ui->txtCommand->setEnabled(true);
+            ui->txtIPHost->setEnabled(false);
+            ui->txtPort->setEnabled(false);
+            ui->txtEncryptionCode->setEnabled(false);
+            this->messageTimer.start(1000);
         }
     }
 }
 
 void frmMain::Disconnect()
 {
-        TCPClient::ClearResults();
+    TCPClient::ClearServerOutput();
 
-        if(TCPClient::IsConnected())
-        {
-            string e_string = crypto->encryptToString("C");
-            TCPClient::SendMessage(e_string); // Send disconnect command to server
-            TCPClient::Disconnect();
-        }
+    if(TCPClient::IsConnected())
+    {
+        TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::DISCONNECT_CODE)); // Send disconnect command to server
+        TCPClient::Disconnect();
+    }
 
-        ui->lblStatus->setText("Not Connected");
-        ui->btnConnect->setText("Connect");
-        ui->btnSend->setText("Send");
-        ui->txtCommand->setEnabled(false);
-        ui->btnSend->setEnabled(false);
-
-        ui->txtIPHost->setEnabled(true);
-        ui->txtPort->setEnabled(true);
-        ui->txtEncryptionCode->setEnabled(true);
-
-        this->message_timer.stop();
+    ui->lblStatus->setText("Not Connected");
+    ui->btnConnect->setText("Connect");
+    ui->btnSend->setText("Send");
+    ui->txtCommand->setEnabled(false);
+    ui->btnSend->setEnabled(false);
+    ui->txtIPHost->setEnabled(true);
+    ui->txtPort->setEnabled(true);
+    ui->txtEncryptionCode->setEnabled(true);
+    this->messageTimer.stop();
 }
 
 void frmMain::CheckMessages()
 {
     if(TCPClient::IsConnected())
     {
-        if(TCPClient::GetResults().length() > 0)
+        if(TCPClient::GetServerOutput().length() > 0)
         {
-            std::string output = "";
-            QStringList results = QString::fromStdString(TCPClient::GetResults()).split("|");
+            std::string serverOutput = "";
+            QStringList serverOutputList = QString::fromStdString(TCPClient::GetServerOutput()).split("|");
 
-            if(results.length() > 0)
+            if(serverOutputList.length() > 0)
             {
-                for(int i = 0; i < results.length(); i++)
+                for(int i = 0; i < serverOutputList.length(); i++)
                 {
-                    QString line = results[i];
-                    if(line.length() > 0)
-                    {
-                        output.append(crypto->decryptToString(line.toStdString()));
-                    }
+                    string outputLine = serverOutputList[i].toStdString();
+
+                    if(outputLine.length() > 0 && outputLine != TCPClient::END_TRANSMISSION_CODE)
+                        serverOutput.append(this->crypto->DecryptString(outputLine));
                 }
             }
 
             if(!TCPClient::IsTransmissionEnd())
             {
-                if(output.length() > 0)
-                {
-                    ui->txtTerminalOutput->append(QString::fromStdString(output));
-                }
+                if(serverOutput.length() > 0)
+                    ui->txtTerminalOutput->append(QString::fromStdString(serverOutput));
 
-                TCPClient::ClearResults();
+                TCPClient::ClearServerOutput();
             }
             else
             {
-                if(output.length() > 0)
-                {
-                    ui->txtTerminalOutput->append(QString::fromStdString(output));
-                }
+                if(serverOutput.length() > 0)
+                    ui->txtTerminalOutput->append(QString::fromStdString(serverOutput));
 
                 ui->txtCommand->setEnabled(true);
                 ui->btnSend->setText("Send");
                 ui->btnSend->setEnabled(false);
 
-                TCPClient::ClearResults();
+                TCPClient::ClearServerOutput();
                 TCPClient::SetTransmissionEnd(false);
             }
         }
@@ -295,17 +270,15 @@ void frmMain::SendCommands()
     {
         if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
         {
-            TCPClient::ClearResults();
+            TCPClient::ClearServerOutput();
 
-            QString command = "M" + ui->txtCommand->text();
-            commands.append(ui->txtCommand->text());
-            command_index = commands.count() - 1;
+            string command = TCPClient::MESSAGE_CODE + ui->txtCommand->text().toStdString();
 
-            string e_string = crypto->encryptToString(command.toStdString());
-
+            this->commands.append(ui->txtCommand->text());
+            this->commandIndex = this->commands.count() - 1;
             ui->txtCommand->setText("");
 
-            if(TCPClient::SendMessage(e_string))
+            if(TCPClient::SendMessage(this->crypto->EncryptString(command)))
             {
                 ui->btnSend->setText("Cancel");
                 ui->btnSend->setEnabled(true);
@@ -315,11 +288,6 @@ void frmMain::SendCommands()
     else if(ui->btnSend->text() == "Cancel")
     {
         if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
-        {
-            QString command = "X";
-            string e_string = crypto->encryptToString(command.toStdString());
-
-            TCPClient::SendMessage(e_string);
-        }
+            TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE));
     }
 }

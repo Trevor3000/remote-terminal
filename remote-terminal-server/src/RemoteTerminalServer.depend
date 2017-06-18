@@ -1,0 +1,55 @@
+# depslib dependency file v1.0
+1497723539 source:/home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/crypto.cpp
+	"crypto.h"
+
+1497723550 /home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/crypto.h
+	<crypto++/modes.h>
+	<crypto++/osrng.h>
+	<crypto++/hex.h>
+	<string>
+
+1497725344 source:/home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/server.cpp
+	"server.h"
+
+1497725349 /home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/server.h
+	<string>
+	<string.h>
+	<stdio.h>
+	<arpa/inet.h>
+	<sys/time.h>
+	<ctime>
+	"socket.h"
+
+1497724938 /home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/socket.h
+	<netinet/in.h>
+	<stdio.h>
+	<unistd.h>
+	<stdlib.h>
+
+1497724979 source:/home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/socket.cpp
+	"socket.h"
+
+1497793617 source:/home/unknown/Documents/Programming/C++/RemoteTerminal/RemoteTerminalServer/main.cpp
+	<string>
+	<string.h>
+	<stdio.h>
+	<stdlib.h>
+	<algorithm>
+	<sys/socket.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<unistd.h>
+	<errno.h>
+	<sys/types.h>
+	<sys/time.h>
+	<ctime>
+	<pthread.h>
+	<sys/wait.h>
+	<signal.h>
+	<fcntl.h>
+	<time.h>
+	<errno.h>
+	<pwd.h>
+	"server.h"
+	"crypto.h"
+

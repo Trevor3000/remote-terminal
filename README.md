@@ -46,7 +46,7 @@ Dated : 26-03-2016
 
 This application is under GNU GPLv3. Please read the COPYING.txt file for further terms and conditions of the license.
 
->Copyright 2016 Matthew James 
+>Copyright 2017 Matthew James 
  This file is part of "Remote Terminal".  
  "Remote Terminal" is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License as published by the Free Software Foundation,
