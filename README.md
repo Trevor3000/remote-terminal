@@ -61,7 +61,7 @@ This application is under GNU GPLv3. Please read the COPYING.txt file for furthe
 
 To contribute, simply folk, clone or patch and send a pull request. The client project has been built using Qt Creator, and the server project was built using Code::Blocks (16.01).
 
-Use Qt Creator with Qt Framework (>= 5.3) to build the project. 
+Use Qt Creator with Qt Framework (>= 5.7) to build the project. 
  
 #### Support Libraries
  
