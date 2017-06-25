@@ -1,6 +1,6 @@
 # Remote Terminal
 
-Remote Terminal was created as a means of controlling GNU/Linux based machines remotely. It utilises AES-256 bit encryption (CBC) to secure its transmissions via a shared encryption code. Both the client and server application must know the encryption code before successful communication can occur; if the encryption code is incorrect, the client will be disconnected.
+Remote Terminal was created as a means of controlling GNU/Linux based machines remotely. It utilises AES-256 bit encryption (GCM) to secure its transmissions via a shared encryption code. Both the client and server application must know the encryption code before successful communication can occur; if the encryption code is incorrect, the client will be disconnected.
 
 Any terminal command can be run on the multi-threaded remote server (providing root access is permitted). If root access is not permitted, the server will run commands on the privileges of the current user. You can customise the number of clients, port number and encryption code for the server application.
 
@@ -28,7 +28,7 @@ Dated : 26-03-2016
 
 * Ability to change directories with in-built cd commands (cd directory_name, cd .., cd) in the server application.
 
-* AES-256 bit encrypted transmissions via TCP protocol.
+* AES-256 bit (GCM) encrypted transmissions via TCP protocol.
 
 * Client application with graphical user interface (GUI).
 
