@@ -1,6 +1,6 @@
 # Remote Terminal
 
-Remote Terminal was created as a means of controlling GNU/Linux based machines remotely. It utilises AES-256 bit encryption (CBC) to secure its transmissions via a shared encryption code. Both the client and server application must know the encryption code before successful communication can occur; if the encryption code is incorrect, the client will be disconnected.
+Remote Terminal was created as a means of controlling GNU/Linux based machines remotely. It utilises AES-256 bit encryption (GCM) to secure its transmissions via a shared encryption code. Both the client and server application must know the encryption code before successful communication can occur; if the encryption code is incorrect, the client will be disconnected.
 
 Any terminal command can be run on the multi-threaded remote server (providing root access is permitted). If root access is not permitted, the server will run commands on the privileges of the current user. You can customise the number of clients, port number and encryption code for the server application.
 
@@ -18,9 +18,9 @@ Remote Terminal [Server]:
 
 #### Current version
 
-Version Number: 0.1
+Version Number: 0.15
 
-Dated : 26-03-2016 
+Dated : 25-06-2017 
 
 #### Features in the current version
 
@@ -28,7 +28,7 @@ Dated : 26-03-2016
 
 * Ability to change directories with in-built cd commands (cd directory_name, cd .., cd) in the server application.
 
-* AES-256 bit encrypted transmissions via TCP protocol.
+* AES-256 bit (GCM) encrypted transmissions via TCP protocol.
 
 * Client application with graphical user interface (GUI).
 
@@ -39,14 +39,12 @@ Dated : 26-03-2016
 
 * Utilising commands that require a further response from an initial command will not work, unless you're explicit in the initial command. For example, if you decide to execute "apt-get upgrade" command, please specify the "-y" flag at the end otherwise it will hang. If it does hang, please click the "Cancel" button on the client application and this should resolve the hanging issue via killing those processes.
 
-* In rare cases, encrypted text may randomly appear in the Terminal Output on the client application. If this does happen, please disconnect and re-connect to the server to avoid seeing it.
-
 
 #### Licence
 
 This application is under GNU GPLv3. Please read the COPYING.txt file for further terms and conditions of the license.
 
->Copyright 2016 Matthew James 
+>Copyright 2017 Matthew James 
  This file is part of "Remote Terminal".  
  "Remote Terminal" is free software: you can redistribute it and/or modify it
  under the terms of the GNU General Public License as published by the Free Software Foundation,
@@ -61,7 +59,7 @@ This application is under GNU GPLv3. Please read the COPYING.txt file for furthe
 
 To contribute, simply folk, clone or patch and send a pull request. The client project has been built using Qt Creator, and the server project was built using Code::Blocks (16.01).
 
-Use Qt Creator with Qt Framework (>= 5.3) to build the project. 
+Use Qt Creator with Qt Framework (>= 5.7) to build the project. 
  
 #### Support Libraries
  

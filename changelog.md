@@ -1,10 +1,14 @@
-remote-terminal-client (0.1-1) stable; urgency=low
+remote-terminal-client (0.1.5-1) stable; urgency=low
 
-  * Ability to view command history via the up and down keys in the client application.
+  * Updated Qt version to 5.7.1 for the client application
+  
+  * Set hash filter to SHA512 for the client and server application
+  
+  * Updated the encryption method of Remote Terminal to AES-256 (GCM)
 
-  * AES-256 bit encrypted transmissions via TCP protocol.
+  * Fixed a decryption issue on client application where EOT code was failing to be decrypted.
 
-  * Client application with graphical user interface (GUI).
+  * Optimisation/readability fixes
 
- -- Matthew James <admin@mjsware.co.uk>  Sat, 26 Mar 2016 09:43:39 +0100
-
+ -- Matthew James <admin@mjsware.co.uk>  Sat, 25 Jun 2017 19:43:39 +0100
+ 

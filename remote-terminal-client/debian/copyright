@@ -3,11 +3,11 @@ Upstream-Name: remote-terminal
 Source: https://github.com/mjsware/remote-terminal
 
 Files: *
-Copyright: 2016 Matthew James <admin@mjsware.co.uk>
+Copyright: 2017 Matthew James <admin@mjsware.co.uk>
 License: GPL-3.0+
 
 Files: debian/*
-Copyright: 2016 Matthew James <admin@mjsware.co.uk>
+Copyright: 2017 Matthew James <admin@mjsware.co.uk>
 License: GPL-3.0+
 
 License: GPL-3.0+
