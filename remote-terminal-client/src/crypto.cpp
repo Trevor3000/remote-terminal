@@ -13,22 +13,28 @@ Crypto::Crypto(std::string key)
 
 std::string Crypto::DecryptString(const std::string &encryptedText)
 {
+    if(encryptedText.length() == 0)
+        return "";
+
     std::string plainText;
 
-    // Generate Cipher, Key, and CBC
     byte key[AES::MAX_KEYLENGTH], iv[AES::BLOCKSIZE];
+
+    memset(iv, 0x00, AES::BLOCKSIZE);
+    memset(key, 0x00, AES::MAX_KEYLENGTH);
+
+    // Generate Cipher, Key, and GCM
     StringSource(reinterpret_cast<const char *>(this->cryptoKey.data()), true,
                   new HashFilter(*(new SHA512), new ArraySink(key, AES::MAX_KEYLENGTH)));
 
-    memset(iv, 0x00, AES::BLOCKSIZE);
-
     try
     {
-        CBC_Mode<AES>::Decryption Decryptor(key, sizeof(key), iv);
+        GCM<AES>::Decryption Decryptor;
+        Decryptor.SetKeyWithIV(key, sizeof(key), iv, sizeof(iv));
         StringSource(encryptedText, true,
-                      new HexDecoder(new StreamTransformationFilter(Decryptor, new StringSink(plainText))));
+                      new HexDecoder(new AuthenticatedDecryptionFilter(Decryptor, new StringSink(plainText))));
     }
-    catch(Exception& e)
+    catch(CryptoPP::Exception & e)
     {
         qDebug() << e.what();
     }
@@ -37,22 +43,27 @@ std::string Crypto::DecryptString(const std::string &encryptedText)
 
 std::string Crypto::EncryptString(const std::string& plainText)
 {
+    if(plainText.length() == 0)
+        return "";
+
     std::string cipherText;
 
-    // Generate Cipher, Key, and CBC
     byte key[AES::MAX_KEYLENGTH], iv[AES::BLOCKSIZE];
-    StringSource(reinterpret_cast<const char *>(this->cryptoKey.data()), true,
-                  new HashFilter(*(new SHA512), new ArraySink(key, AES::MAX_KEYLENGTH)));
 
     memset(iv, 0x00, AES::BLOCKSIZE);
+    memset(key, 0x00, AES::MAX_KEYLENGTH);
 
+    // Generate Cipher, Key, and GCM
+    StringSource(reinterpret_cast<const char *>(this->cryptoKey.data()), true,
+                  new HashFilter(*(new SHA512), new ArraySink(key, AES::MAX_KEYLENGTH)));
     try
     {
-        CBC_Mode<AES>::Encryption Encryptor(key, sizeof(key), iv);
-        StringSource(plainText, true, new StreamTransformationFilter(Encryptor,
+        GCM<AES>::Encryption Encryptor;
+        Encryptor.SetKeyWithIV(key, sizeof(key), iv, sizeof(iv));
+        StringSource(plainText, true, new AuthenticatedEncryptionFilter(Encryptor,
                                                   new HexEncoder(new StringSink(cipherText))));
     }
-    catch(Exception& e)
+    catch(CryptoPP::Exception& e)
     {
         qDebug() << e.what();
     }

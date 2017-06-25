@@ -10,6 +10,7 @@
 #include <crypto++/modes.h>
 #include <crypto++/osrng.h>
 #include <crypto++/hex.h>
+#include <crypto++/gcm.h>
 #include <string>
 #include <QDebug>
 
