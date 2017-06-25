@@ -18,9 +18,9 @@ Remote Terminal [Server]:
 
 #### Current version
 
-Version Number: 0.1
+Version Number: 0.15
 
-Dated : 26-03-2016 
+Dated : 25-06-2017 
 
 #### Features in the current version
 
@@ -38,8 +38,6 @@ Dated : 26-03-2016
 #### Known Issues
 
 * Utilising commands that require a further response from an initial command will not work, unless you're explicit in the initial command. For example, if you decide to execute "apt-get upgrade" command, please specify the "-y" flag at the end otherwise it will hang. If it does hang, please click the "Cancel" button on the client application and this should resolve the hanging issue via killing those processes.
-
-* In rare cases, encrypted text may randomly appear in the Terminal Output on the client application. If this does happen, please disconnect and re-connect to the server to avoid seeing it.
 
 
 #### Licence
