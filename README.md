@@ -18,7 +18,7 @@ Remote Terminal [Server]:
 
 #### Current version
 
-Version Number: 0.15
+Version Number: 0.1.5
 
 Dated : 25-06-2017 
 
