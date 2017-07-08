@@ -4,25 +4,25 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef FRMABOUT_H
-#define FRMABOUT_H
+#ifndef FRMPROFILEMANAGER_H
+#define FRMPROFILEMANAGER_H
 
-#include "ui_frmabout.h"
+#include "ui_frmprofilemanager.h"
 
 namespace Ui
 {
-    class frmAbout;
+    class frmProfileManager;
 }
 
-class frmAbout : public QWidget
+class frmProfileManager : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit frmAbout(QWidget *parent = 0);
+    explicit frmProfileManager(QWidget *parent = 0);
 
 private:
-    Ui::frmAbout *ui;
+    Ui::frmProfileManager *ui;
 };
 
-#endif // FRMABOUT_H
+#endif // FRMPROFILEMANAGER_H

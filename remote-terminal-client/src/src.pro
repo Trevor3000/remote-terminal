@@ -22,15 +22,18 @@ SOURCES += main.cpp\
         frmmain.cpp \
     client.cpp \
     crypto.cpp \
-    frmabout.cpp
+    frmabout.cpp \
+    frmprofilemanager.cpp
 
 HEADERS  += frmmain.h \
     client.h \
     crypto.h \
-    frmabout.h
+    frmabout.h \
+    frmprofilemanager.h
 
 FORMS    += frmmain.ui \
-    frmabout.ui
+    frmabout.ui \
+    frmprofilemanager.ui
     
     
 DESTDIR = ../bin

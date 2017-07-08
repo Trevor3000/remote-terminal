@@ -4,25 +4,10 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef FRMABOUT_H
-#define FRMABOUT_H
+#include "frmprofilemanager.h"
 
-#include "ui_frmabout.h"
-
-namespace Ui
+frmProfileManager::frmProfileManager(QWidget *parent) : QWidget(parent), ui(new Ui::frmProfileManager)
 {
-    class frmAbout;
+    ui->setupUi(this); // Set up widget ui
+    setWindowFlags((windowFlags() | Qt::CustomizeWindowHint) & ~Qt::WindowMaximizeButtonHint); // Set the widget to have no form buttons
 }
-
-class frmAbout : public QWidget
-{
-    Q_OBJECT
-
-public:
-    explicit frmAbout(QWidget *parent = 0);
-
-private:
-    Ui::frmAbout *ui;
-};
-
-#endif // FRMABOUT_H

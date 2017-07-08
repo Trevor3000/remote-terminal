@@ -47,6 +47,12 @@
         <height>180</height>
        </size>
       </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
       <property name="styleSheet">
        <string notr="true">QGroupBox
 {
@@ -61,7 +67,7 @@
       </property>
       <layout class="QFormLayout" name="formLayout">
        <item row="0" column="0">
-        <widget class="QLabel" name="lblIPHost">
+        <widget class="QLabel" name="lblIPAddress">
          <property name="text">
           <string>IP Address:</string>
          </property>
@@ -75,14 +81,14 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="lblEncryptionCode">
+        <widget class="QLabel" name="lblPassword">
          <property name="text">
-          <string>Encryption Code:</string>
+          <string>Password:</string>
          </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QLineEdit" name="txtEncryptionCode">
+        <widget class="QLineEdit" name="txtPassword">
          <property name="text">
           <string/>
          </property>
@@ -109,7 +115,7 @@
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QLabel" name="lblLStatus">
+        <widget class="QLabel" name="lbLStatus">
          <property name="text">
           <string>Status:</string>
          </property>
@@ -123,7 +129,7 @@
         </widget>
        </item>
        <item row="4" column="0">
-        <spacer name="horizontalSpacer_2">
+        <spacer name="horizontalSpacer2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -156,14 +162,14 @@
        </item>
       </layout>
       <zorder>txtIPHost</zorder>
-      <zorder>txtEncryptionCode</zorder>
-      <zorder>lblIPHost</zorder>
-      <zorder>lblEncryptionCode</zorder>
+      <zorder>txtPassword</zorder>
+      <zorder>lblIPAddress</zorder>
+      <zorder>lblPassword</zorder>
       <zorder>txtPort</zorder>
       <zorder>lblPort</zorder>
-      <zorder>lblLStatus</zorder>
+      <zorder>lbLStatus</zorder>
       <zorder>lblStatus</zorder>
-      <zorder>horizontalSpacer_2</zorder>
+      <zorder>horizontalSpacer2</zorder>
       <zorder>btnConnect</zorder>
      </widget>
     </item>
@@ -174,6 +180,12 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
       </property>
       <property name="styleSheet">
        <string notr="true">QGroupBox
@@ -271,6 +283,12 @@
         <width>16777215</width>
         <height>120</height>
        </size>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
       </property>
       <property name="styleSheet">
        <string notr="true">QGroupBox
@@ -384,9 +402,9 @@
      <height>19</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
+   <widget class="QMenu" name="menuRemoteTerminal">
     <property name="title">
-     <string>File</string>
+     <string>Remote Terminal</string>
     </property>
     <addaction name="itemExit"/>
    </widget>
@@ -397,7 +415,14 @@
     <addaction name="itemWebsite"/>
     <addaction name="itemAboutRemoteTerminal"/>
    </widget>
-   <addaction name="menuFile"/>
+   <widget class="QMenu" name="menuProfileManager">
+    <property name="title">
+     <string>Profile Manager</string>
+    </property>
+    <addaction name="itemOpenProfileManager"/>
+   </widget>
+   <addaction name="menuRemoteTerminal"/>
+   <addaction name="menuProfileManager"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="ctrlStatus"/>
@@ -414,6 +439,11 @@
   <action name="itemWebsite">
    <property name="text">
     <string>Website</string>
+   </property>
+  </action>
+  <action name="itemOpenProfileManager">
+   <property name="text">
+    <string>Open Manager</string>
    </property>
   </action>
  </widget>

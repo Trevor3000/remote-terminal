@@ -16,6 +16,7 @@
 #include "client.h"
 #include "crypto.h"
 #include "frmabout.h"
+#include "frmprofilemanager.h"
 
 namespace Ui
 {
@@ -38,10 +39,11 @@ public slots:
     void closeEvent(QCloseEvent*);
     void LoadWindowSettings();
     void SaveWindowSettings();
-    void txtCommand_TextChanged();
-    void itemAboutRemoteTerminal();
-    void itemViewWebsite();
-    void btnConnect_Click();
+    void OnCommandTextChange();
+    void ViewAboutRemoteTerminal();
+    void ViewWebsite();
+    void ViewProfileManager();
+    void ConnectClick();
     void CloseApplication();
     void Connect();
     void Disconnect();
@@ -52,6 +54,7 @@ private:
     Ui::frmMain *ui;
     Crypto *crypto;
     frmAbout *aboutForm;
+    frmProfileManager *profileManager;
     QTimer messageTimer; // Message check timer
     QStringList commands;
     int commandIndex;

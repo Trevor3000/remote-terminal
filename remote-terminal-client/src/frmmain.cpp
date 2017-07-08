@@ -13,16 +13,18 @@ frmMain::frmMain(QWidget *parent) : QMainWindow(parent), ui(new Ui::frmMain)
 
     LoadWindowSettings();
 
-    connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(btnConnect_Click()));
+    connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(ConnectClick()));
     connect(ui->btnSend, SIGNAL(clicked(bool)),this, SLOT(SendCommands()));
     connect(ui->btnClearLog, SIGNAL(clicked(bool)),this, SLOT(ClearLog()));
-    connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(txtCommand_TextChanged()));
+    connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(OnCommandTextChange()));
     connect(ui->itemExit,SIGNAL(triggered()),this,SLOT(CloseApplication()));
-    connect(ui->itemAboutRemoteTerminal,SIGNAL(triggered()),this,SLOT(itemAboutRemoteTerminal()));
-    connect(ui->itemWebsite,SIGNAL(triggered()),this,SLOT(itemViewWebsite()));
+    connect(ui->itemAboutRemoteTerminal,SIGNAL(triggered()),this,SLOT(ViewAboutRemoteTerminal()));
+    connect(ui->itemWebsite,SIGNAL(triggered()),this,SLOT(ViewWebsite()));
+    connect(ui->itemOpenProfileManager,SIGNAL(triggered()),this,SLOT(ViewProfileManager()));
     connect(&messageTimer, SIGNAL(timeout()), this, SLOT(CheckMessages()));
 
     this->aboutForm = 0;
+    this->profileManager = 0;
     this->crypto = 0;
 }
 
@@ -76,7 +78,7 @@ void frmMain::closeEvent(QCloseEvent*)
     SaveWindowSettings();
 }
 
-void frmMain::txtCommand_TextChanged()
+void frmMain::OnCommandTextChange()
 {
     ui->btnSend->setEnabled(ui->txtCommand->text().length() > 0);
 }
@@ -89,7 +91,18 @@ void frmMain::CloseApplication()
     this->close();
 }
 
-void frmMain::itemAboutRemoteTerminal()
+void frmMain::ViewProfileManager()
+{
+    if(this->profileManager)
+        delete this->profileManager;
+
+    this->profileManager = new frmProfileManager();
+    this->profileManager->move(this->rect().center() - this->profileManager->rect().center());
+    this->profileManager->show();
+}
+
+
+void frmMain::ViewAboutRemoteTerminal()
 {
     if(this->aboutForm)
         delete this->aboutForm;
@@ -99,12 +112,12 @@ void frmMain::itemAboutRemoteTerminal()
     this->aboutForm->show();
 }
 
-void frmMain::itemViewWebsite()
+void frmMain::ViewWebsite()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/mjsware/remote-terminal"));
 }
 
-void frmMain::btnConnect_Click()
+void frmMain::ConnectClick()
 {
     if(TCPClient::IsConnected())
     {
@@ -125,6 +138,9 @@ frmMain::~frmMain()
 
     if(this->aboutForm)
         delete this->aboutForm;
+
+    if(this->profileManager)
+        delete this->profileManager;
 
     delete ui;
 }
@@ -173,7 +189,7 @@ void frmMain::ClearLog()
 
 void frmMain::Connect()
 {
-    if(ui->txtIPHost->text().length() > 0 && ui->txtEncryptionCode->text().length() > 0 && ui->txtPort->text().length() > 0)
+    if(ui->txtIPHost->text().length() > 0 && ui->txtPassword->text().length() > 0 && ui->txtPort->text().length() > 0)
     {
         if(TCPClient::Connect(ui->txtIPHost->text().toStdString(), ui->txtPort->text().toInt()))
         {
@@ -183,14 +199,14 @@ void frmMain::Connect()
             if(this->crypto)
                 delete this->crypto;
 
-            this->crypto = new Crypto(ui->txtEncryptionCode->text().toStdString());
+            this->crypto = new Crypto(ui->txtPassword->text().toStdString());
 
             ui->lblStatus->setText("Connected!");
             ui->btnConnect->setText("Disconnect");
             ui->txtCommand->setEnabled(true);
             ui->txtIPHost->setEnabled(false);
             ui->txtPort->setEnabled(false);
-            ui->txtEncryptionCode->setEnabled(false);
+            ui->txtPassword->setEnabled(false);
             this->messageTimer.start(1000);
         }
     }
@@ -213,7 +229,7 @@ void frmMain::Disconnect()
     ui->btnSend->setEnabled(false);
     ui->txtIPHost->setEnabled(true);
     ui->txtPort->setEnabled(true);
-    ui->txtEncryptionCode->setEnabled(true);
+    ui->txtPassword->setEnabled(true);
     this->messageTimer.stop();
 }
 
