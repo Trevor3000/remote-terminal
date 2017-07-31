@@ -23,6 +23,7 @@ frmMain::frmMain(QWidget *parent) : QMainWindow(parent), ui(new Ui::frmMain)
     connect(ui->itemOpenProfileManager,SIGNAL(triggered()),this,SLOT(ViewProfileManager()));
     connect(ui->cboSelectedProfile, SIGNAL(currentIndexChanged(int)), SLOT(LoadSelectedProfile(int)));
     connect(&messageTimer, SIGNAL(timeout()), this, SLOT(CheckMessages()));
+    connect(&connectTimer, SIGNAL(timeout()), this, SLOT(Connect()));
 
     ui->cboSelectedProfile->installEventFilter(this);
 
@@ -163,7 +164,12 @@ void frmMain::ConnectClick()
     }
     else
     {
-        Connect();
+        if(ui->txtIPHost->text().length() > 0 && ui->txtPassword->text().length() > 0 && ui->txtPort->text().length() > 0)
+        {
+            ui->btnConnect->setEnabled(false);
+            ui->lblStatus->setText("Connecting...");
+            this->connectTimer.start(1000);
+        }
     }
 }
 
@@ -269,7 +275,7 @@ void frmMain::ClearLog()
 
 void frmMain::Connect()
 {
-    if(ui->txtIPHost->text().length() > 0 && ui->txtPassword->text().length() > 0 && ui->txtPort->text().length() > 0)
+    if(!TCPClient::IsConnected())
     {
         if(TCPClient::Connect(ui->txtIPHost->text().toStdString(), ui->txtPort->text().toInt()))
         {
@@ -287,9 +293,16 @@ void frmMain::Connect()
             ui->txtIPHost->setEnabled(false);
             ui->txtPort->setEnabled(false);
             ui->txtPassword->setEnabled(false);
+
             this->messageTimer.start(1000);
         }
+        else
+        {
+            ui->lblStatus->setText("Not Connected");
+            ui->btnConnect->setEnabled(true);
+        }
     }
+    this->connectTimer.stop();
 }
 
 void frmMain::Disconnect()

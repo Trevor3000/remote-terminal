@@ -67,6 +67,7 @@ private:
     frmProfileManager *profileManagerForm;
     QVector<Profile*> storedProfiles;
     QTimer messageTimer; // Message check timer
+    QTimer connectTimer;
     QStringList commands;
     int commandIndex;
 };
