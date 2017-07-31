@@ -21,11 +21,42 @@ frmMain::frmMain(QWidget *parent) : QMainWindow(parent), ui(new Ui::frmMain)
     connect(ui->itemAboutRemoteTerminal,SIGNAL(triggered()),this,SLOT(ViewAboutRemoteTerminal()));
     connect(ui->itemWebsite,SIGNAL(triggered()),this,SLOT(ViewWebsite()));
     connect(ui->itemOpenProfileManager,SIGNAL(triggered()),this,SLOT(ViewProfileManager()));
+    connect(ui->cboSelectedProfile, SIGNAL(currentIndexChanged(int)), SLOT(LoadSelectedProfile(int)));
     connect(&messageTimer, SIGNAL(timeout()), this, SLOT(CheckMessages()));
 
+    ui->cboSelectedProfile->installEventFilter(this);
+
     this->aboutForm = 0;
-    this->profileManager = 0;
+    this->profileManagerForm = 0;
     this->crypto = 0;
+
+    this->settingsCrypto = new Crypto(SettingsCrypto::GetUniqueSystemHash().toStdString());
+    this->settings = new Settings(*this->settingsCrypto);
+    this->settings->GetSettings();
+    this->profileManager = new ProfileManager(*this->settings);
+
+    LoadStoredProfiles();
+}
+
+void frmMain::LoadStoredProfiles()
+{
+    int defaultIndex = -1;
+    this->storedProfiles = this->profileManager->GetProfiles();
+    ui->cboSelectedProfile->clear();
+
+    for(int i = 0; i < this->storedProfiles.count(); i++)
+    {
+        ui->cboSelectedProfile->addItem(this->storedProfiles.at(i)->GetProfileAsDefault() ? this->storedProfiles.at(i)->GetProfileName() + " (Default)"
+                                                                                          : this->storedProfiles.at(i)->GetProfileName());
+        if(this->storedProfiles.at(i)->GetProfileAsDefault())
+            defaultIndex = i;
+    }
+    ui->cboSelectedProfile->addItem("None");
+    ui->cboSelectedProfile->setCurrentIndex(defaultIndex != -1 ? defaultIndex
+                                                               : this->settings->GetLastProfileIndex());
+
+    if(ui->cboSelectedProfile->itemText(ui->cboSelectedProfile->currentIndex()) != "None")
+        LoadSelectedProfile(defaultIndex);
 }
 
 // Events
@@ -78,6 +109,13 @@ void frmMain::closeEvent(QCloseEvent*)
     SaveWindowSettings();
 }
 
+bool frmMain::eventFilter(QObject *object, QEvent *event)
+{
+    if (object == ui->cboSelectedProfile && event->type() == QEvent::MouseButtonPress)
+        LoadStoredProfiles();
+    return false;
+}
+
 void frmMain::OnCommandTextChange()
 {
     ui->btnSend->setEnabled(ui->txtCommand->text().length() > 0);
@@ -93,12 +131,12 @@ void frmMain::CloseApplication()
 
 void frmMain::ViewProfileManager()
 {
-    if(this->profileManager)
-        delete this->profileManager;
+    if(this->profileManagerForm)
+        delete this->profileManagerForm;
 
-    this->profileManager = new frmProfileManager();
-    this->profileManager->move(this->rect().center() - this->profileManager->rect().center());
-    this->profileManager->show();
+    this->profileManagerForm = new frmProfileManager(*this->profileManager);
+    this->profileManagerForm->move(this->rect().center() - this->profileManagerForm->rect().center());
+    this->profileManagerForm->show();
 }
 
 
@@ -133,19 +171,61 @@ frmMain::~frmMain()
 {
     SaveWindowSettings();
 
-    if(this->crypto)
-        delete this->crypto;
+    if(ui->cboSelectedProfile->currentIndex() != -1)
+    {
+        this->settings->SetLastProfileIndex(ui->cboSelectedProfile->currentIndex());
+        this->settings->SaveSettings();
+    }
 
     if(this->aboutForm)
         delete this->aboutForm;
 
+    if(this->profileManagerForm)
+        delete this->profileManagerForm;
+
+    if(this->settingsCrypto)
+        delete this->settingsCrypto;
+
+    if(this->crypto)
+        delete this->crypto;
+
     if(this->profileManager)
         delete this->profileManager;
+
+    if(this->settings)
+        delete this->settings;
 
     delete ui;
 }
 
 // Methods
+
+void frmMain::ClearSelectedProfile()
+{
+    ui->txtIPHost->setText("");
+    ui->txtPassword->setText("");
+    ui->txtPort->setText("");
+}
+
+void frmMain::LoadSelectedProfile(int index)
+{
+    if(index != -1)
+    {
+        ClearSelectedProfile();
+
+        if(ui->cboSelectedProfile->itemText(index) != "None")
+        {
+            Profile *currentProfile = this->storedProfiles.at(index);
+
+            if(currentProfile)
+            {
+                ui->txtIPHost->setText(currentProfile->GetProfileIPAddress());
+                ui->txtPassword->setText(currentProfile->GetProfilePassword());
+                ui->txtPort->setText(currentProfile->GetProfileTCPPort() != 0 ? QString::number(currentProfile->GetProfileTCPPort()) : "");
+            }
+        }
+    }
+}
 
 void frmMain::LoadWindowSettings()
 {

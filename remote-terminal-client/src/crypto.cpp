@@ -9,6 +9,7 @@
 Crypto::Crypto(std::string key)
 {
     this->cryptoKey = key;
+    this->invalidKey = false;
 }
 
 std::string Crypto::DecryptString(const std::string &encryptedText)
@@ -37,6 +38,7 @@ std::string Crypto::DecryptString(const std::string &encryptedText)
     catch(CryptoPP::Exception & e)
     {
         qDebug() << e.what();
+        this->invalidKey = true;
     }
     return plainText;
 }
@@ -66,6 +68,71 @@ std::string Crypto::EncryptString(const std::string& plainText)
     catch(CryptoPP::Exception& e)
     {
         qDebug() << e.what();
+        this->invalidKey = true;
     }
     return cipherText;
+}
+
+QString Crypto::EncryptString(const QString &plainText)
+{
+    return QString::fromStdString(EncryptString(plainText.toStdString()));
+}
+
+QString Crypto::DecryptString(const QString &encryptedText)
+{
+    return QString::fromStdString(DecryptString(encryptedText.toStdString()));
+}
+
+bool Crypto::IsInvalidKey()
+{
+    return this->invalidKey;
+}
+
+QString Crypto::GetCurrentKey()
+{
+    return QString::fromStdString(this->cryptoKey);
+}
+
+QString Crypto::DecryptSettingsFile(QString filePath)
+{
+    QString result = "";
+    QFile settingsFile(filePath);
+
+    if(!filePath.isEmpty())
+    {
+        if(settingsFile.open(QIODevice::ReadOnly))
+        {
+            QTextStream inputStream(&settingsFile);
+
+            while (!inputStream.atEnd())
+            {
+                result += inputStream.readLine();
+            }
+
+            result = DecryptString(result);
+            settingsFile.close();
+        }
+    }
+    return result;
+}
+
+bool Crypto::EncryptSettingsFile(QString filePath, QString xmlContent)
+{
+    QFile settingsFile(filePath);
+
+    if (settingsFile.exists())
+        settingsFile.remove();
+
+    if(settingsFile.open(QIODevice::WriteOnly))
+    {
+        xmlContent = EncryptString(xmlContent);
+
+        QTextStream outputStream(&settingsFile);
+        outputStream << xmlContent;
+
+        settingsFile.flush();
+        settingsFile.close();
+        return true;
+    }
+    return false;
 }

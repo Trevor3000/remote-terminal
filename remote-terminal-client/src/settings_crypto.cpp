@@ -4,37 +4,14 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef CRYPTO_H
-#define CRYPTO_H
+#include "settings_crypto.h"
 
-#include <crypto++/modes.h>
-#include <crypto++/osrng.h>
-#include <crypto++/hex.h>
-#include <crypto++/gcm.h>
-#include <string>
-#include <QDebug>
-#include <QFile>
-
-using namespace CryptoPP;
-
-class Crypto
+QString SettingsCrypto::GetUniqueSystemHash()
 {
-public:
+    QString uniqueHash = qgetenv("USER") + "_" + QDir::homePath() + "_" +
+                         QSysInfo::currentCpuArchitecture() + "_" +
+                         QSysInfo::productType() + "_" +
+                         QSysInfo::kernelType();
 
-    Crypto(std::string);
-    std::string EncryptString(const std::string&);
-    std::string DecryptString(const std::string&);
-    QString EncryptString(const QString&);
-    QString DecryptString(const QString&);
-
-    QString DecryptSettingsFile(QString);
-    bool EncryptSettingsFile(QString, QString);
-    bool IsInvalidKey();
-    QString GetCurrentKey();
-
-private:
-    std::string cryptoKey;
-    bool invalidKey;
-};
-
-#endif // CRYPTO_H
+    return QString(QCryptographicHash::hash(uniqueHash.toUtf8(),QCryptographicHash::Sha512).toHex());
+}

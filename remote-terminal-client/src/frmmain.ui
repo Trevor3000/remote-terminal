@@ -66,28 +66,28 @@
        <bool>false</bool>
       </property>
       <layout class="QFormLayout" name="formLayout">
-       <item row="0" column="0">
+       <item row="1" column="0">
         <widget class="QLabel" name="lblIPAddress">
          <property name="text">
           <string>IP Address:</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item row="1" column="1">
         <widget class="QLineEdit" name="txtIPHost">
          <property name="text">
           <string>127.0.0.1</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="2" column="0">
         <widget class="QLabel" name="lblPassword">
          <property name="text">
           <string>Password:</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="2" column="1">
         <widget class="QLineEdit" name="txtPassword">
          <property name="text">
           <string/>
@@ -97,14 +97,14 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="lblPort">
          <property name="text">
           <string>Port (TCP):</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="3" column="1">
         <widget class="QLineEdit" name="txtPort">
          <property name="text">
           <string>6001</string>
@@ -114,21 +114,21 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="lbLStatus">
          <property name="text">
           <string>Status:</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
+       <item row="4" column="1">
         <widget class="QLabel" name="lblStatus">
          <property name="text">
           <string>Not Connected</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="0">
+       <item row="5" column="0">
         <spacer name="horizontalSpacer2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -141,7 +141,7 @@
          </property>
         </spacer>
        </item>
-       <item row="4" column="1">
+       <item row="5" column="1">
         <widget class="QPushButton" name="btnConnect">
          <property name="minimumSize">
           <size>
@@ -160,6 +160,16 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="cboSelectedProfile"/>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblProfile">
+         <property name="text">
+          <string>Profile:</string>
+         </property>
+        </widget>
+       </item>
       </layout>
       <zorder>txtIPHost</zorder>
       <zorder>txtPassword</zorder>
@@ -171,6 +181,8 @@
       <zorder>lblStatus</zorder>
       <zorder>horizontalSpacer2</zorder>
       <zorder>btnConnect</zorder>
+      <zorder>cboSelectedProfile</zorder>
+      <zorder>lblProfile</zorder>
      </widget>
     </item>
     <item row="1" column="0">

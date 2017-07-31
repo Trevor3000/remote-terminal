@@ -4,37 +4,23 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef CRYPTO_H
-#define CRYPTO_H
+#ifndef PROFILEMANAGER_H
+#define PROFILEMANAGER_H
 
-#include <crypto++/modes.h>
-#include <crypto++/osrng.h>
-#include <crypto++/hex.h>
-#include <crypto++/gcm.h>
-#include <string>
-#include <QDebug>
-#include <QFile>
+#include <QVector>
+#include <QDomDocument>
+#include <settings.h>
+#include <profile.h>
 
-using namespace CryptoPP;
-
-class Crypto
+class ProfileManager
 {
 public:
-
-    Crypto(std::string);
-    std::string EncryptString(const std::string&);
-    std::string DecryptString(const std::string&);
-    QString EncryptString(const QString&);
-    QString DecryptString(const QString&);
-
-    QString DecryptSettingsFile(QString);
-    bool EncryptSettingsFile(QString, QString);
-    bool IsInvalidKey();
-    QString GetCurrentKey();
+    ProfileManager(Settings&);
+    QVector<Profile*> GetProfiles();
+    bool SaveProfiles(QVector<Profile*>);
 
 private:
-    std::string cryptoKey;
-    bool invalidKey;
+    Settings *settings;
 };
 
-#endif // CRYPTO_H
+#endif // PROFILEMANAGER_H

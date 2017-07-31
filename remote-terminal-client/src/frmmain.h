@@ -13,8 +13,11 @@
 #include <QKeyEvent>
 #include <QDesktopServices>
 #include <QSettings>
+
 #include "client.h"
 #include "crypto.h"
+#include "settings.h"
+#include "settings_crypto.h"
 #include "frmabout.h"
 #include "frmprofilemanager.h"
 
@@ -30,6 +33,8 @@ class frmMain : public QMainWindow
 public:
     explicit frmMain(QWidget *parent = 0);
     ~frmMain();
+    void ClearSelectedProfile();
+    void LoadStoredProfiles();
 
 public slots:
     void ClearLog();
@@ -37,6 +42,7 @@ public slots:
     void moveEvent(QMoveEvent*);
     void resizeEvent(QResizeEvent*);
     void closeEvent(QCloseEvent*);
+    bool eventFilter(QObject *, QEvent *);
     void LoadWindowSettings();
     void SaveWindowSettings();
     void OnCommandTextChange();
@@ -49,12 +55,17 @@ public slots:
     void Disconnect();
     void SendCommands();
     void CheckMessages();
+    void LoadSelectedProfile(int);
 
 private:
     Ui::frmMain *ui;
     Crypto *crypto;
+    Crypto *settingsCrypto;
+    Settings *settings;
+    ProfileManager *profileManager;
     frmAbout *aboutForm;
-    frmProfileManager *profileManager;
+    frmProfileManager *profileManagerForm;
+    QVector<Profile*> storedProfiles;
     QTimer messageTimer; // Message check timer
     QStringList commands;
     int commandIndex;

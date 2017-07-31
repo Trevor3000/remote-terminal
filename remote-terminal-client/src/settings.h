@@ -4,42 +4,40 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef FRMPROFILEMANAGER_H
-#define FRMPROFILEMANAGER_H
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
-#include "ui_frmprofilemanager.h"
-#include "profilemanager.h"
+#include <QString>
+#include <QCoreApplication>
+#include <QDir>
+#include <QXmlStreamWriter>
+#include <QMessageBox>
+#include <QDebug>
+#include <QStandardPaths>
+#include "crypto.h"
 
-namespace Ui
+class Settings
 {
-    class frmProfileManager;
-}
-
-class frmProfileManager : public QWidget
-{
-    Q_OBJECT
-
 public:
-    explicit frmProfileManager(ProfileManager&, QWidget *parent = 0);
-    void EnableProfileFields();
-    void DisableProfileFields();
-    void LoadProfile(int);
-    bool IsDefaultProfileSelected();
-
-public slots:
-    void AddNewProfile();
-    void DeleteProfile();
-    void SaveProfile();
-    void LoadProfiles();
-    void CheckShowPassword();
-    void OnProfileItemClick(QListWidgetItem*);
-    void OnProfileItemChange(int);
+    Settings(Crypto&);
+    void SetDefaultPaths();
+    void SetDefaultSettings();
+    bool CheckSettings();
+    bool GetSettings();
+    bool SaveSettings();
+    int GetLastProfileIndex();
+    QString GetProfilesPath();
+    void SetLastProfileIndex(const int&);
+    Crypto *GetCrypto();
 
 private:
-    ProfileManager *profileManager;
-    QVector<Profile*> storedProfiles;
-    Ui::frmProfileManager *ui;
-    int selectedProfileIndex;
+    QString homePath;
+    QString topDirectory;
+    QString settingsPath;
+    QString profilesPath;
+    QString settingsDirectory;
+    int lastProfileIndex;
+    Crypto *crypto;
 };
 
-#endif // FRMPROFILEMANAGER_H
+#endif // SETTINGS_H
