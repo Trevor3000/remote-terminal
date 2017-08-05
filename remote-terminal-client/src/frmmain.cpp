@@ -293,8 +293,11 @@ void frmMain::Connect()
             ui->txtIPHost->setEnabled(false);
             ui->txtPort->setEnabled(false);
             ui->txtPassword->setEnabled(false);
-
+            ui->cboSelectedProfile->setEnabled(false);
+            ui->btnConnect->setEnabled(true);
             this->messageTimer.start(1000);
+            this->setWindowTitle("Remote Terminal [Client] - " + ui->txtIPHost->text() + ":" + ui->txtPort->text());
+
         }
         else
         {
@@ -315,6 +318,7 @@ void frmMain::Disconnect()
         TCPClient::Disconnect();
     }
 
+    this->setWindowTitle("Remote Terminal [Client]");
     ui->lblStatus->setText("Not Connected");
     ui->btnConnect->setText("Connect");
     ui->btnSend->setText("Send");
@@ -323,6 +327,8 @@ void frmMain::Disconnect()
     ui->txtIPHost->setEnabled(true);
     ui->txtPort->setEnabled(true);
     ui->txtPassword->setEnabled(true);
+    ui->btnConnect->setEnabled(true);
+    ui->cboSelectedProfile->setEnabled(true);
     this->messageTimer.stop();
 }
 
@@ -392,11 +398,20 @@ void frmMain::SendCommands()
                 ui->btnSend->setText("Cancel");
                 ui->btnSend->setEnabled(true);
             }
+            else
+            {
+                Disconnect();
+            }
         }
     }
     else if(ui->btnSend->text() == "Cancel")
     {
         if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
-            TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE));
+        {
+            if(!TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE)))
+            {
+                Disconnect();
+            }
+        }
     }
 }

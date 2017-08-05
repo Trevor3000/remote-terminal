@@ -98,9 +98,9 @@ void TCPClient::ClearServerOutput()
 
 void *TCPClient::run(void *ptr)
 {
+    string sPacket;
     int receivedBytes = 0;
     char packet[512] = {0};
-    string sPacket;
 
     // Used for checking whether the server exists (via input)
     fd_set readFileDesc;
@@ -138,6 +138,8 @@ void TCPClient::Disconnect()
     {
         TCPConn.IsConnected = false;
         TCPConn.TransmissionEnd = false;
-        close(TCPConn.CurrentSocket);
+
+        if(shutdown(TCPConn.CurrentSocket, SHUT_RDWR) == 0)
+            close(TCPConn.CurrentSocket);
     }
 }
