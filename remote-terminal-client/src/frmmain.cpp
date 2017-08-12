@@ -14,7 +14,8 @@ frmMain::frmMain(QWidget *parent) : QMainWindow(parent), ui(new Ui::frmMain)
     LoadWindowSettings();
 
     connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(ConnectClick()));
-    connect(ui->btnSend, SIGNAL(clicked(bool)),this, SLOT(SendCommands()));
+    connect(ui->btnSend, SIGNAL(clicked(bool)),this, SLOT(SendCommand()));
+    connect(ui->btnCancel, SIGNAL(clicked(bool)),this, SLOT(CancelCommand()));
     connect(ui->btnClearLog, SIGNAL(clicked(bool)),this, SLOT(ClearLog()));
     connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(OnCommandTextChange()));
     connect(ui->itemExit,SIGNAL(triggered()),this,SLOT(CloseApplication()));
@@ -66,9 +67,9 @@ void frmMain::keyPressEvent(QKeyEvent* pressedEvent)
 {
     if(pressedEvent->key() == Qt::Key_Return)
     {
-        SendCommands();
+        SendCommand();
     }
-    else if(pressedEvent->key() == Qt::Key_Up) // Show recent command history
+    else if(pressedEvent->key() == Qt::Key_Down) // Show recent command history
     {
         this->commandIndex += 1;
 
@@ -81,7 +82,7 @@ void frmMain::keyPressEvent(QKeyEvent* pressedEvent)
             this->commandIndex = this->commands.count() - 1;
         }
     }
-    else if(pressedEvent->key() == Qt::Key_Down) // Show past command history
+    else if(pressedEvent->key() == Qt::Key_Up) // Show past command history
     {
         if(this->commandIndex >= 0 && this->commands.count() > this->commandIndex)
         {
@@ -365,8 +366,8 @@ void frmMain::CheckMessages()
                     ui->txtTerminalOutput->append(QString::fromStdString(serverOutput));
 
                 ui->txtCommand->setEnabled(true);
-                ui->btnSend->setText("Send");
                 ui->btnSend->setEnabled(false);
+                ui->btnCancel->setEnabled(false);
 
                 TCPClient::ClearServerOutput();
                 TCPClient::SetTransmissionEnd(false);
@@ -379,39 +380,37 @@ void frmMain::CheckMessages()
     }
 }
 
-void frmMain::SendCommands()
+void frmMain::SendCommand()
 {
-    if(ui->btnSend->text() == "Send")
+    if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
     {
-        if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
+        TCPClient::ClearServerOutput();
+
+        string command = TCPClient::MESSAGE_CODE + ui->txtCommand->text().toStdString();
+
+        this->commands.append(ui->txtCommand->text());
+        this->commandIndex = this->commands.count() - 1;
+        ui->txtCommand->setText("");
+        ui->btnCancel->setEnabled(true);
+
+        if(TCPClient::SendMessage(this->crypto->EncryptString(command)))
         {
-            TCPClient::ClearServerOutput();
-
-            string command = TCPClient::MESSAGE_CODE + ui->txtCommand->text().toStdString();
-
-            this->commands.append(ui->txtCommand->text());
-            this->commandIndex = this->commands.count() - 1;
-            ui->txtCommand->setText("");
-
-            if(TCPClient::SendMessage(this->crypto->EncryptString(command)))
-            {
-                ui->btnSend->setText("Cancel");
-                ui->btnSend->setEnabled(true);
-            }
-            else
-            {
-                Disconnect();
-            }
+            ui->btnSend->setText("Send");
+        }
+        else
+        {
+            Disconnect();
         }
     }
-    else if(ui->btnSend->text() == "Cancel")
+}
+
+void frmMain::CancelCommand()
+{
+    if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
     {
-        if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
+        if(!TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE)))
         {
-            if(!TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE)))
-            {
-                Disconnect();
-            }
+            Disconnect();
         }
     }
 }

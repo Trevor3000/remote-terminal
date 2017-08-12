@@ -53,7 +53,8 @@ public slots:
     void CloseApplication();
     void Connect();
     void Disconnect();
-    void SendCommands();
+    void SendCommand();
+    void CancelCommand();
     void CheckMessages();
     void LoadSelectedProfile(int);
 
