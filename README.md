@@ -20,7 +20,7 @@ Remote Terminal [Server]:
 
 Version Number: 0.2.0
 
-Dated : 
+Dated : 13-08-2017
 
 #### Features in the current version
 

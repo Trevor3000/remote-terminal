@@ -406,11 +406,7 @@ void HandleClientPipe(unsigned short socketID)
         bytesRead = read(ClientConsole[socketID].pipeChildToParent[0], readPipeBuffer, 512);
         if (bytesRead == -1 && errno == EAGAIN)  // No data available from pipe
         {
-            if((commandWaitTimer > 6000 && !processOpen) || (totalPipeBytes < 512 && !processOpen)) // No data left in pipe
-            {
-                break;
-            }
-            else if(commandWaitTimer > 1000 && processOpen)
+            if(commandWaitTimer > 1000 && processOpen)
             {
                 proc = fopen(processPath,"r"); // Check to see if process is running
 
