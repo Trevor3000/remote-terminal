@@ -3,7 +3,7 @@ Version=1.0
 Type=Application
 Terminal=false
 Name=Remote Terminal [Client]
-Exec=/usr/bin/RTC -style=gtk %F
+Exec=/usr/bin/RTC %F
 Comment=Network Administration Tool
 StartupNotify=false
 Encoding=UTF-8
