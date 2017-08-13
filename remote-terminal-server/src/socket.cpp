@@ -35,9 +35,24 @@ void Socket::SetListenSocket()
 
 void Socket::SetListenSocketProperties()
 {
+    const int reuseOptVal = 1;
+    struct timeval timeoutVal;
+
+    timeoutVal.tv_usec = 500;
     listenSocketProperties.sin_port = htons(serverPort); // Setting port with htons by converting it to network byte order.
     listenSocketProperties.sin_addr.s_addr = INADDR_ANY; // Setting Remote IP Address.
     listenSocketProperties.sin_family = AF_INET; // Socket family to use. (AF_NET = TCP/UDP).
+
+    if (setsockopt(listenSocket, SOL_SOCKET, SO_RCVTIMEO,(char *)&timeoutVal,sizeof(struct timeval)) < 0)
+        perror("setsockopt(SO_RCVTIMEO) failed");
+
+    if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuseOptVal, sizeof(reuseOptVal)) < 0)
+        perror("setsockopt(SO_REUSEADDR) failed");
+
+    #ifdef SO_REUSEPORT
+        if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEPORT, (const char*)&reuseOptVal, sizeof(reuseOptVal)) < 0)
+            perror("setsockopt(SO_REUSEPORT) failed");
+    #endif
 }
 
 void Socket::ListenSocketBind()
@@ -56,5 +71,6 @@ void Socket::ListenSocketBind()
 
 void Socket::ListenSocketDisconnect()
 {
-    close(listenSocket); // Close listening sock.
+    if(shutdown(listenSocket, SHUT_RDWR) == 0)
+        close(listenSocket);
 }
