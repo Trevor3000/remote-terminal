@@ -10,7 +10,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -22,15 +22,26 @@ SOURCES += main.cpp\
         frmmain.cpp \
     client.cpp \
     crypto.cpp \
-    frmabout.cpp
+    frmabout.cpp \
+    frmprofilemanager.cpp \
+    profile.cpp \
+    settings.cpp \
+    profilemanager.cpp \
+    settings_crypto.cpp
 
 HEADERS  += frmmain.h \
     client.h \
     crypto.h \
-    frmabout.h
+    frmabout.h \
+    frmprofilemanager.h \
+    profile.h \
+    settings.h \
+    profilemanager.h \
+    settings_crypto.h
 
 FORMS    += frmmain.ui \
-    frmabout.ui
+    frmabout.ui \
+    frmprofilemanager.ui
     
     
 DESTDIR = ../bin

@@ -1,14 +1,19 @@
-remote-terminal-client (0.1.5-1) stable; urgency=low
+remote-terminal-client (0.2.0-1) stable; urgency=low
 
-  * Updated Qt version to 5.7.1 for the client application
-  
-  * Set hash filter to SHA512 for the client and server application
-  
-  * Updated the encryption method of Remote Terminal to AES-256 (GCM)
+  * Server application: Fix to allow the server to reuse a previous port if the application was closed and then reopened. [Bug]
+  * Server application: Client socket shutdown fixes. [Bug]
+  * Server application: Change directory command fixes. [Bug]
+  * Server application: Added ability to send additional input to an executed process. [Feature]
+  * Server application: Added ability to inform the user which process id was killed. [Feature]
 
-  * Fixed a decryption issue on client application where EOT code was failing to be decrypted.
+  * Client application: Fix to prevent main form from freezing on connecting. [Bug]
+  * Client application: New cancel button, which will allow a user to cancel running processes. [Feature]
+  * Client application: Send button has been separated from the cancel button to enable a user to send follow-up commands in response to a previous command. [Feature]
+  * Client application: New profile manager form. [Feature]
+  * Client application: Ability to select a profile on the main form. [Feature]
+  * Client application: Ability to save the previous profile selection on form close event. [Feature]
+  * Client application: Ability to load the previous profile selection on form open event. [Feature]
+  * Client application: Settings integration (with encryption). [Feature]
 
-  * Optimisation/readability fixes
-
- -- Matthew James <admin@mjsware.co.uk>  Sat, 25 Jun 2017 19:43:39 +0100
+ -- Matthew James <admin@mjsware.co.uk>  Sat, 13 Aug 2017 16:43:39 +0100
  

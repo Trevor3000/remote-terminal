@@ -10,17 +10,17 @@ It utilises the crypto++ library and Qt Framework to provide its features.
 
 Remote Terminal [Client]:
 
-![Image of Remote Terminal [Client] (Version 0.1)](https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTC.png)
+![Image of Remote Terminal [Client] (Version 0.2.0)](https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTC.png)
 
 Remote Terminal [Server]:
 
-![Image of Remote Terminal [Server] (Version 0.1)](https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTS.png)
+![Image of Remote Terminal [Server] (Version 0.2.0)](https://raw.githubusercontent.com/mjsware/remote-terminal/master/images/RTS.png)
 
 #### Current version
 
-Version Number: 0.1.5
+Version Number: 0.2.0
 
-Dated : 25-06-2017 
+Dated : 13-08-2017
 
 #### Features in the current version
 
@@ -28,16 +28,15 @@ Dated : 25-06-2017
 
 * Ability to change directories with in-built cd commands (cd directory_name, cd .., cd) in the server application.
 
-* AES-256 bit (GCM) encrypted transmissions via TCP protocol.
+* Ability to send additional input to an executed process.
+
+* AES-256 bit (GCM) encrypted and hashed (SHA-512) transmissions via TCP protocol.
 
 * Client application with graphical user interface (GUI).
 
+* Ability to store and utilse multiple connection profiles in the client application.
+
 * Multi-threaded server application with ability to customise the number of clients, port number and encryption code. If a TCP port is not available to bind to, the server application will take any available port (if not specified as a parameter).
-
-
-#### Known Issues
-
-* Utilising commands that require a further response from an initial command will not work, unless you're explicit in the initial command. For example, if you decide to execute "apt-get upgrade" command, please specify the "-y" flag at the end otherwise it will hang. If it does hang, please click the "Cancel" button on the client application and this should resolve the hanging issue via killing those processes.
 
 
 #### Licence

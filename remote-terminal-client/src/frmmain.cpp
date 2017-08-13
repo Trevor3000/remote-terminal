@@ -13,17 +13,52 @@ frmMain::frmMain(QWidget *parent) : QMainWindow(parent), ui(new Ui::frmMain)
 
     LoadWindowSettings();
 
-    connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(btnConnect_Click()));
-    connect(ui->btnSend, SIGNAL(clicked(bool)),this, SLOT(SendCommands()));
+    connect(ui->btnConnect, SIGNAL(clicked(bool)),this, SLOT(ConnectClick()));
+    connect(ui->btnSend, SIGNAL(clicked(bool)),this, SLOT(SendCommand()));
+    connect(ui->btnCancel, SIGNAL(clicked(bool)),this, SLOT(CancelCommand()));
     connect(ui->btnClearLog, SIGNAL(clicked(bool)),this, SLOT(ClearLog()));
-    connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(txtCommand_TextChanged()));
+    connect(ui->txtCommand, SIGNAL(textChanged(QString)),this, SLOT(OnCommandTextChange()));
     connect(ui->itemExit,SIGNAL(triggered()),this,SLOT(CloseApplication()));
-    connect(ui->itemAboutRemoteTerminal,SIGNAL(triggered()),this,SLOT(itemAboutRemoteTerminal()));
-    connect(ui->itemWebsite,SIGNAL(triggered()),this,SLOT(itemViewWebsite()));
+    connect(ui->itemAboutRemoteTerminal,SIGNAL(triggered()),this,SLOT(ViewAboutRemoteTerminal()));
+    connect(ui->itemWebsite,SIGNAL(triggered()),this,SLOT(ViewWebsite()));
+    connect(ui->itemOpenProfileManager,SIGNAL(triggered()),this,SLOT(ViewProfileManager()));
+    connect(ui->cboSelectedProfile, SIGNAL(currentIndexChanged(int)), SLOT(LoadSelectedProfile(int)));
     connect(&messageTimer, SIGNAL(timeout()), this, SLOT(CheckMessages()));
+    connect(&connectTimer, SIGNAL(timeout()), this, SLOT(Connect()));
+
+    ui->cboSelectedProfile->installEventFilter(this);
 
     this->aboutForm = 0;
+    this->profileManagerForm = 0;
     this->crypto = 0;
+
+    this->settingsCrypto = new Crypto(SettingsCrypto::GetUniqueSystemHash().toStdString());
+    this->settings = new Settings(*this->settingsCrypto);
+    this->settings->GetSettings();
+    this->profileManager = new ProfileManager(*this->settings);
+
+    LoadStoredProfiles();
+}
+
+void frmMain::LoadStoredProfiles()
+{
+    int defaultIndex = -1;
+    this->storedProfiles = this->profileManager->GetProfiles();
+    ui->cboSelectedProfile->clear();
+
+    for(int i = 0; i < this->storedProfiles.count(); i++)
+    {
+        ui->cboSelectedProfile->addItem(this->storedProfiles.at(i)->GetProfileAsDefault() ? this->storedProfiles.at(i)->GetProfileName() + " (Default)"
+                                                                                          : this->storedProfiles.at(i)->GetProfileName());
+        if(this->storedProfiles.at(i)->GetProfileAsDefault())
+            defaultIndex = i;
+    }
+    ui->cboSelectedProfile->addItem("None");
+    ui->cboSelectedProfile->setCurrentIndex(defaultIndex != -1 ? defaultIndex
+                                                               : this->settings->GetLastProfileIndex());
+
+    if(ui->cboSelectedProfile->itemText(ui->cboSelectedProfile->currentIndex()) != "None")
+        LoadSelectedProfile(defaultIndex);
 }
 
 // Events
@@ -32,9 +67,9 @@ void frmMain::keyPressEvent(QKeyEvent* pressedEvent)
 {
     if(pressedEvent->key() == Qt::Key_Return)
     {
-        SendCommands();
+        SendCommand();
     }
-    else if(pressedEvent->key() == Qt::Key_Up) // Show recent command history
+    else if(pressedEvent->key() == Qt::Key_Down) // Show recent command history
     {
         this->commandIndex += 1;
 
@@ -47,7 +82,7 @@ void frmMain::keyPressEvent(QKeyEvent* pressedEvent)
             this->commandIndex = this->commands.count() - 1;
         }
     }
-    else if(pressedEvent->key() == Qt::Key_Down) // Show past command history
+    else if(pressedEvent->key() == Qt::Key_Up) // Show past command history
     {
         if(this->commandIndex >= 0 && this->commands.count() > this->commandIndex)
         {
@@ -76,7 +111,14 @@ void frmMain::closeEvent(QCloseEvent*)
     SaveWindowSettings();
 }
 
-void frmMain::txtCommand_TextChanged()
+bool frmMain::eventFilter(QObject *object, QEvent *event)
+{
+    if (object == ui->cboSelectedProfile && event->type() == QEvent::MouseButtonPress)
+        LoadStoredProfiles();
+    return false;
+}
+
+void frmMain::OnCommandTextChange()
 {
     ui->btnSend->setEnabled(ui->txtCommand->text().length() > 0);
 }
@@ -89,7 +131,18 @@ void frmMain::CloseApplication()
     this->close();
 }
 
-void frmMain::itemAboutRemoteTerminal()
+void frmMain::ViewProfileManager()
+{
+    if(this->profileManagerForm)
+        delete this->profileManagerForm;
+
+    this->profileManagerForm = new frmProfileManager(*this->profileManager);
+    this->profileManagerForm->move(this->rect().center() - this->profileManagerForm->rect().center());
+    this->profileManagerForm->show();
+}
+
+
+void frmMain::ViewAboutRemoteTerminal()
 {
     if(this->aboutForm)
         delete this->aboutForm;
@@ -99,12 +152,12 @@ void frmMain::itemAboutRemoteTerminal()
     this->aboutForm->show();
 }
 
-void frmMain::itemViewWebsite()
+void frmMain::ViewWebsite()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/mjsware/remote-terminal"));
 }
 
-void frmMain::btnConnect_Click()
+void frmMain::ConnectClick()
 {
     if(TCPClient::IsConnected())
     {
@@ -112,7 +165,12 @@ void frmMain::btnConnect_Click()
     }
     else
     {
-        Connect();
+        if(ui->txtIPHost->text().length() > 0 && ui->txtPassword->text().length() > 0 && ui->txtPort->text().length() > 0)
+        {
+            ui->btnConnect->setEnabled(false);
+            ui->lblStatus->setText("Connecting...");
+            this->connectTimer.start(1000);
+        }
     }
 }
 
@@ -120,16 +178,61 @@ frmMain::~frmMain()
 {
     SaveWindowSettings();
 
-    if(this->crypto)
-        delete this->crypto;
+    if(ui->cboSelectedProfile->currentIndex() != -1)
+    {
+        this->settings->SetLastProfileIndex(ui->cboSelectedProfile->currentIndex());
+        this->settings->SaveSettings();
+    }
 
     if(this->aboutForm)
         delete this->aboutForm;
+
+    if(this->profileManagerForm)
+        delete this->profileManagerForm;
+
+    if(this->settingsCrypto)
+        delete this->settingsCrypto;
+
+    if(this->crypto)
+        delete this->crypto;
+
+    if(this->profileManager)
+        delete this->profileManager;
+
+    if(this->settings)
+        delete this->settings;
 
     delete ui;
 }
 
 // Methods
+
+void frmMain::ClearSelectedProfile()
+{
+    ui->txtIPHost->setText("");
+    ui->txtPassword->setText("");
+    ui->txtPort->setText("");
+}
+
+void frmMain::LoadSelectedProfile(int index)
+{
+    if(index != -1)
+    {
+        ClearSelectedProfile();
+
+        if(ui->cboSelectedProfile->itemText(index) != "None")
+        {
+            Profile *currentProfile = this->storedProfiles.at(index);
+
+            if(currentProfile)
+            {
+                ui->txtIPHost->setText(currentProfile->GetProfileIPAddress());
+                ui->txtPassword->setText(currentProfile->GetProfilePassword());
+                ui->txtPort->setText(currentProfile->GetProfileTCPPort() != 0 ? QString::number(currentProfile->GetProfileTCPPort()) : "");
+            }
+        }
+    }
+}
 
 void frmMain::LoadWindowSettings()
 {
@@ -173,7 +276,7 @@ void frmMain::ClearLog()
 
 void frmMain::Connect()
 {
-    if(ui->txtIPHost->text().length() > 0 && ui->txtEncryptionCode->text().length() > 0 && ui->txtPort->text().length() > 0)
+    if(!TCPClient::IsConnected())
     {
         if(TCPClient::Connect(ui->txtIPHost->text().toStdString(), ui->txtPort->text().toInt()))
         {
@@ -183,17 +286,27 @@ void frmMain::Connect()
             if(this->crypto)
                 delete this->crypto;
 
-            this->crypto = new Crypto(ui->txtEncryptionCode->text().toStdString());
+            this->crypto = new Crypto(ui->txtPassword->text().toStdString());
 
             ui->lblStatus->setText("Connected!");
             ui->btnConnect->setText("Disconnect");
             ui->txtCommand->setEnabled(true);
             ui->txtIPHost->setEnabled(false);
             ui->txtPort->setEnabled(false);
-            ui->txtEncryptionCode->setEnabled(false);
+            ui->txtPassword->setEnabled(false);
+            ui->cboSelectedProfile->setEnabled(false);
+            ui->btnConnect->setEnabled(true);
             this->messageTimer.start(1000);
+            this->setWindowTitle("Remote Terminal [Client] - " + ui->txtIPHost->text() + ":" + ui->txtPort->text());
+
+        }
+        else
+        {
+            ui->lblStatus->setText("Not Connected");
+            ui->btnConnect->setEnabled(true);
         }
     }
+    this->connectTimer.stop();
 }
 
 void frmMain::Disconnect()
@@ -206,6 +319,7 @@ void frmMain::Disconnect()
         TCPClient::Disconnect();
     }
 
+    this->setWindowTitle("Remote Terminal [Client]");
     ui->lblStatus->setText("Not Connected");
     ui->btnConnect->setText("Connect");
     ui->btnSend->setText("Send");
@@ -213,7 +327,9 @@ void frmMain::Disconnect()
     ui->btnSend->setEnabled(false);
     ui->txtIPHost->setEnabled(true);
     ui->txtPort->setEnabled(true);
-    ui->txtEncryptionCode->setEnabled(true);
+    ui->txtPassword->setEnabled(true);
+    ui->btnConnect->setEnabled(true);
+    ui->cboSelectedProfile->setEnabled(true);
     this->messageTimer.stop();
 }
 
@@ -250,8 +366,8 @@ void frmMain::CheckMessages()
                     ui->txtTerminalOutput->append(QString::fromStdString(serverOutput));
 
                 ui->txtCommand->setEnabled(true);
-                ui->btnSend->setText("Send");
                 ui->btnSend->setEnabled(false);
+                ui->btnCancel->setEnabled(false);
 
                 TCPClient::ClearServerOutput();
                 TCPClient::SetTransmissionEnd(false);
@@ -264,30 +380,37 @@ void frmMain::CheckMessages()
     }
 }
 
-void frmMain::SendCommands()
+void frmMain::SendCommand()
 {
-    if(ui->btnSend->text() == "Send")
+    if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
     {
-        if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
+        TCPClient::ClearServerOutput();
+
+        string command = TCPClient::MESSAGE_CODE + ui->txtCommand->text().toStdString();
+
+        this->commands.append(ui->txtCommand->text());
+        this->commandIndex = this->commands.count() - 1;
+        ui->txtCommand->setText("");
+        ui->btnCancel->setEnabled(true);
+
+        if(TCPClient::SendMessage(this->crypto->EncryptString(command)))
         {
-            TCPClient::ClearServerOutput();
-
-            string command = TCPClient::MESSAGE_CODE + ui->txtCommand->text().toStdString();
-
-            this->commands.append(ui->txtCommand->text());
-            this->commandIndex = this->commands.count() - 1;
-            ui->txtCommand->setText("");
-
-            if(TCPClient::SendMessage(this->crypto->EncryptString(command)))
-            {
-                ui->btnSend->setText("Cancel");
-                ui->btnSend->setEnabled(true);
-            }
+            ui->btnSend->setText("Send");
+        }
+        else
+        {
+            Disconnect();
         }
     }
-    else if(ui->btnSend->text() == "Cancel")
+}
+
+void frmMain::CancelCommand()
+{
+    if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
     {
-        if(TCPClient::IsConnected() && !TCPClient::IsTransmissionEnd())
-            TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE));
+        if(!TCPClient::SendMessage(this->crypto->EncryptString(TCPClient::CANCEL_CODE)))
+        {
+            Disconnect();
+        }
     }
 }

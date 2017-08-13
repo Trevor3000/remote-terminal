@@ -13,9 +13,13 @@
 #include <QKeyEvent>
 #include <QDesktopServices>
 #include <QSettings>
+
 #include "client.h"
 #include "crypto.h"
+#include "settings.h"
+#include "settings_crypto.h"
 #include "frmabout.h"
+#include "frmprofilemanager.h"
 
 namespace Ui
 {
@@ -29,6 +33,8 @@ class frmMain : public QMainWindow
 public:
     explicit frmMain(QWidget *parent = 0);
     ~frmMain();
+    void ClearSelectedProfile();
+    void LoadStoredProfiles();
 
 public slots:
     void ClearLog();
@@ -36,23 +42,33 @@ public slots:
     void moveEvent(QMoveEvent*);
     void resizeEvent(QResizeEvent*);
     void closeEvent(QCloseEvent*);
+    bool eventFilter(QObject *, QEvent *);
     void LoadWindowSettings();
     void SaveWindowSettings();
-    void txtCommand_TextChanged();
-    void itemAboutRemoteTerminal();
-    void itemViewWebsite();
-    void btnConnect_Click();
+    void OnCommandTextChange();
+    void ViewAboutRemoteTerminal();
+    void ViewWebsite();
+    void ViewProfileManager();
+    void ConnectClick();
     void CloseApplication();
     void Connect();
     void Disconnect();
-    void SendCommands();
+    void SendCommand();
+    void CancelCommand();
     void CheckMessages();
+    void LoadSelectedProfile(int);
 
 private:
     Ui::frmMain *ui;
     Crypto *crypto;
+    Crypto *settingsCrypto;
+    Settings *settings;
+    ProfileManager *profileManager;
     frmAbout *aboutForm;
+    frmProfileManager *profileManagerForm;
+    QVector<Profile*> storedProfiles;
     QTimer messageTimer; // Message check timer
+    QTimer connectTimer;
     QStringList commands;
     int commandIndex;
 };

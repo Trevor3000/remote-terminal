@@ -4,37 +4,35 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef CRYPTO_H
-#define CRYPTO_H
+#ifndef PROFILE_H
+#define PROFILE_H
 
-#include <crypto++/modes.h>
-#include <crypto++/osrng.h>
-#include <crypto++/hex.h>
-#include <crypto++/gcm.h>
-#include <string>
-#include <QDebug>
-#include <QFile>
+#include <QString>
 
-using namespace CryptoPP;
-
-class Crypto
+class Profile
 {
 public:
 
-    Crypto(std::string);
-    std::string EncryptString(const std::string&);
-    std::string DecryptString(const std::string&);
-    QString EncryptString(const QString&);
-    QString DecryptString(const QString&);
+    Profile();
+    Profile(QString, QString, QString, int, bool);
 
-    QString DecryptSettingsFile(QString);
-    bool EncryptSettingsFile(QString, QString);
-    bool IsInvalidKey();
-    QString GetCurrentKey();
+    QString GetProfileName();
+    QString GetProfileIPAddress();
+    QString GetProfilePassword();
+    int GetProfileTCPPort();
+    bool GetProfileAsDefault();
+    void SetProfileName(QString);
+    void SetProfileIPAddress(QString);
+    void SetProfilePassword(QString);
+    void SetProfileTCPPort(int);
+    void SetProfileAsDefault(bool);
 
 private:
-    std::string cryptoKey;
-    bool invalidKey;
+    QString profileName;
+    QString profileIPAddress;
+    QString profilePassword;
+    int profileTCPPort;
+    bool profileAsDefault;
 };
 
-#endif // CRYPTO_H
+#endif // PROFILE_H

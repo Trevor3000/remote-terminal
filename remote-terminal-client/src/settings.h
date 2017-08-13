@@ -4,37 +4,40 @@
 // "Remote Terminal" is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License along with "Remote Terminal". If not, see http://www.gnu.org/licenses/.
 
-#ifndef CRYPTO_H
-#define CRYPTO_H
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
-#include <crypto++/modes.h>
-#include <crypto++/osrng.h>
-#include <crypto++/hex.h>
-#include <crypto++/gcm.h>
-#include <string>
+#include <QString>
+#include <QCoreApplication>
+#include <QDir>
+#include <QXmlStreamWriter>
+#include <QMessageBox>
 #include <QDebug>
-#include <QFile>
+#include <QStandardPaths>
+#include "crypto.h"
 
-using namespace CryptoPP;
-
-class Crypto
+class Settings
 {
 public:
-
-    Crypto(std::string);
-    std::string EncryptString(const std::string&);
-    std::string DecryptString(const std::string&);
-    QString EncryptString(const QString&);
-    QString DecryptString(const QString&);
-
-    QString DecryptSettingsFile(QString);
-    bool EncryptSettingsFile(QString, QString);
-    bool IsInvalidKey();
-    QString GetCurrentKey();
+    Settings(Crypto&);
+    void SetDefaultPaths();
+    void SetDefaultSettings();
+    bool CheckSettings();
+    bool GetSettings();
+    bool SaveSettings();
+    int GetLastProfileIndex();
+    QString GetProfilesPath();
+    void SetLastProfileIndex(const int&);
+    Crypto *GetCrypto();
 
 private:
-    std::string cryptoKey;
-    bool invalidKey;
+    QString homePath;
+    QString topDirectory;
+    QString settingsPath;
+    QString profilesPath;
+    QString settingsDirectory;
+    int lastProfileIndex;
+    Crypto *crypto;
 };
 
-#endif // CRYPTO_H
+#endif // SETTINGS_H

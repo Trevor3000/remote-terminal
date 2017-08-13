@@ -104,7 +104,9 @@ void Server::CloseSocket(unsigned short int index)
     }
     else
     {
-        close(this->clients[index]); // Close global socket
+        if(shutdown(this->clients[index], SHUT_RDWR) == 0)
+            close(this->clients[index]);
+
         this->clients[index] = 0; // Null global socket
     }
 }
@@ -113,13 +115,15 @@ void Server::SocketsDisconnect()
 {
     for(unsigned short int i = 0; i <= this->maxClients; i++)
     {
-        if(clients[i] == -1)
+        if(this->clients[i] == -1)
         {
             this->clients[i] = 0; // Null global socket
         }
         else
         {
-            close(this->clients[i]); // Close global socket
+            if(shutdown(this->clients[i], SHUT_RDWR) == 0)
+                close(this->clients[i]);
+
             this->clients[i] = 0; // Null global socket
         }
     }

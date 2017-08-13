@@ -19,7 +19,7 @@
 #include <ctime>
 #include <pthread.h>
 #include <sys/wait.h>
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
@@ -29,26 +29,35 @@
 #include "crypto.h"
 
 #define GetSpacer() "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-#define ServerVersion() "0.15"
+#define ServerVersion() "0.2.0"
 
 void SocketListen();
-void *NewClient(void *ptr);
-void *NewConsole(void *ptr);
+void SendTerminalServerOutput(int);
+void SendEndOfTransmissionCode(int);
+void *NewClient(void *);
+void *NewConsole(void *);
+void HandleClientPipe(unsigned short);
 
 typedef struct ClientThreadData
 {
-    std::string input;
+    std::string command;
     std::string hostname; // Current host name of client thread
     std::string username; // Current user name of client thread
     std::string directory; // Current directory of client thread
     unsigned short int socketID; // Socket number
+    int pipeParentToChild[2];
+    int pipeChildToParent[2];
+    pid_t activePipeID;
+    bool pipeActive;
+    std::string nextCommand;
+    bool hasNextCommand;
+    int exitCode;
 } ThreadData;
-
 
 Server * Service;
 Crypto * Crypt;
 
-int *ClientCodes = NULL; // Client console codes
+ThreadData *ClientConsole = NULL; // Client console thread data
 
 int main(int argc, char *argv[])
 {
@@ -85,29 +94,22 @@ int main(int argc, char *argv[])
 
     Service = new Server(serverPort, maxClients);
     Crypt = new Crypto(key);
-    ClientCodes = new int[maxClients + 1];
+    ClientConsole = new ThreadData[maxClients + 1];
 
     printf("\n\t[+] Listening on port %d [TCP]\n",Service->GetServerPort());
 
     Service->ResetSockets();
     SocketListen();
-
-    delete [] ClientCodes;
-    delete Crypt;
-    delete Service;
-
     return 0;
 }
 
 void SocketListen()
 {
-    const int clientTimeout = 500;
     int socketPropertiesSize = 0;
 
+    // Listen For Connections
     while(1)
     {
-        // Listen For Connections
-        setsockopt(Service->GetListenSocket(), SOL_SOCKET, SO_RCVTIMEO, (char *)&clientTimeout, sizeof(clientTimeout));
         while(listen(Service->GetListenSocket(),Service->GetMaxClients()) == -1); // Listen for new connections (Stop once someone connects)
 
         for(unsigned short int i = 0; i <= Service->GetMaxClients(); i++) // Loop through sockets
@@ -124,7 +126,7 @@ void SocketListen()
                     break; // Skip this interval
                 }
 
-                ClientCodes[i] = 0; // 0 = keep console thread, 1 = close
+                ClientConsole[i].exitCode = 0; // 0 = keep console thread, 1 = close
                 Service->SetCurrentClientIP(inet_ntoa(Service->listenSocketProperties.sin_addr));
                 Service->SetNumClients(Service->GetNumClients() + 1); // Set Number of clients
                 Service->SetCurrentClientSocket(i); // Set current used socket
@@ -136,32 +138,17 @@ void SocketListen()
     }
 }
 
-void EscapeDirectory(std::string &directory)
-{
-    std::string part;
-    std::string newDirectory;
-
-    for(unsigned int i = 0; i < directory.length(); i++)
-    {
-        part = directory.at(i);
-        newDirectory.append(part == " " ? "\\ " : part);
-    }
-    directory = newDirectory;
-}
-
 void *NewClient(void *ptr)
 {
-    std::string output, sPacket;
+    std::string serverOutput, sPacket;
     std::string hostname, username;
     std::string currentDirectory;
 
     pthread_t newConsoleThread;
-    ThreadData threadData;
 
     char packet[512] = {0}; // Array to store received data
     char currentHostname[512] = {0}; // Array to store host name
-    char startDirectory[PATH_MAX] = {0};
-    fd_set readFileDesc;
+    char startDirectory[PATH_MAX] = {0}; // Start path of execution
 
     const unsigned short int socketID = Service->GetCurrentClientSocket(); // This will store the current socket used
     unsigned short int bytesReceived = 0; // Store the number of bytes received
@@ -173,8 +160,8 @@ void *NewClient(void *ptr)
     username.assign(userInfo->pw_name); // Set user name of current user
 
     readlink("/proc/self/cwd", startDirectory, PATH_MAX);
-    threadData.directory = std::string(startDirectory);
     currentDirectory = std::string(startDirectory);
+    ClientConsole[socketID].directory = currentDirectory;
 
     // Print client information.
     printf("\n\tClient Action");
@@ -182,15 +169,12 @@ void *NewClient(void *ptr)
     printf("\n\t- New connection request has been accepted!");
     printf("\n\t- The number of clients have increased to %d\n",Service->GetNumClients());
 
-    // Used for checking whether a client exists (via input)
-    FD_ZERO(&readFileDesc);
-    FD_SET(Service->clients[socketID], &readFileDesc);
+    ClientConsole[socketID].socketID = socketID;
+    ClientConsole[socketID].username = username;
+    ClientConsole[socketID].hostname = hostname;
 
     do
     {
-        if(Service->CheckClientConnection(socketID, readFileDesc) < 0) // Check if client is still there.
-            break;
-
         bytesReceived = recv(Service->clients[socketID],packet,sizeof(packet),0); // Receive information from client and get number of clients.
 
         if(bytesReceived != 0)
@@ -202,99 +186,109 @@ void *NewClient(void *ptr)
             {
                 switch(sPacket.at(0))
                 {
-                    case 'M': // Message
+                case 'M': // Message
+                {
+                    memset(packet,0,sizeof(packet));
+                    sPacket.erase(0,1);
+                    sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\n'), sPacket.end()); // Remove newline character
+                    sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\r'), sPacket.end()); // Remove return character
+
+                    if(ClientConsole[socketID].exitCode == 0) // One thread at a time.
                     {
-                        memset(packet,0,sizeof(packet));
-                        sPacket.erase(0,1);
-                        sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\n'), sPacket.end()); // Remove newline character
-                        sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\r'), sPacket.end()); // Remove return character
-
-                        if(ClientCodes[socketID] == 0) // One thread at a time.
+                        if(sPacket.find("sudo ") != std::string::npos && geteuid() != 0)   // Prevent use of sudo if non-root user (prevents thread from getting stuck)
                         {
-                            if(sPacket.find("sudo ") != std::string::npos && geteuid() != 0)   // Prevent use of sudo if non-root user (prevents thread from getting stuck)
+                            serverOutput = "";
+                            serverOutput.append("\nYou must be root to perform this command.\n");
+                            serverOutput = Crypt->EncryptString(serverOutput); // Encryption
+                            serverOutput.append("|");
+
+                            send(Service->clients[socketID],serverOutput.c_str(), serverOutput.length(), 0);
+
+                            SendEndOfTransmissionCode(socketID);
+                        }
+                        else if(sPacket.find("cd") != std::string::npos)
+                        {
+                            if(sPacket.find("cd ..") != std::string::npos && sPacket.length() == 5) // For the command "cd .." - up one directory
                             {
-                                output = "";
-                                output.append("\nYou must be root to perform this command.\n");
-                                output = Crypt->EncryptString(output); // Encryption
-                                output.append("|");
-
-                                send(Service->clients[socketID],output.c_str(), output.length(), 0);
-
-                                // Send end of transmission code
-                                output = "EOT";
-                                send(Service->clients[socketID], output.c_str(), output.length(), 0);
+                                currentDirectory = ClientConsole[socketID].directory + "/..";
                             }
-                            else if(sPacket.find("cd") != std::string::npos)
+                            else if(sPacket.find("cd ",0,2) != std::string::npos && sPacket.length() > 2) // cd directory_name
                             {
-                                if(sPacket.find("cd ..") != std::string::npos && sPacket.length() == 5) // For the command "cd .." - up one directory
-                                {
-                                    currentDirectory.erase(std::remove(currentDirectory.begin(), currentDirectory.end(), '\\'), currentDirectory.end()); // Remove \\ character
-                                    currentDirectory = currentDirectory.substr(0, currentDirectory.find_last_of("/\\"));
-                                    EscapeDirectory(currentDirectory);
-                                }
-                                else if(sPacket.find("cd ",0,2) != std::string::npos && sPacket.length() > 2) // cd directory_name
-                                {
-                                    currentDirectory = currentDirectory + "/" + sPacket.substr(3, sPacket.length());
-                                    EscapeDirectory(currentDirectory);
-                                }
-                                else if(sPacket.find("cd",0,1) != std::string::npos && sPacket.length() == 2) // Switch to home directory
-                                {
-                                    currentDirectory.assign(userInfo->pw_dir);
-                                    EscapeDirectory(currentDirectory);
-                                }
+                                currentDirectory = sPacket.substr(3, sPacket.length());
+                            }
+                            else if(sPacket.find("cd",0,1) != std::string::npos && sPacket.length() == 2) // Switch to home directory
+                            {
+                                currentDirectory.assign(userInfo->pw_dir);
+                            }
 
-                                threadData.directory = currentDirectory;
+                            if (chdir(currentDirectory.c_str()) != -1)
+                            {
+                                getcwd(startDirectory, PATH_MAX);
+                                ClientConsole[socketID].directory = std::string(startDirectory);
+                            }
 
-                                // Send end of transmission code
-                                output = "EOT";
-                                send(Service->clients[socketID], output.c_str(), output.length(), 0);
+                            ClientConsole[socketID].command = sPacket;
+                            SendTerminalServerOutput(socketID);
+
+                            SendEndOfTransmissionCode(socketID);
+                        }
+                        else
+                        {
+
+                            if(!ClientConsole[socketID].pipeActive)
+                            {
+                                ClientConsole[socketID].command = sPacket;
+
+                                if (pipe(ClientConsole[socketID].pipeChildToParent) == 0 && pipe(ClientConsole[socketID].pipeParentToChild) == 0)
+                                {
+                                    fcntl(ClientConsole[socketID].pipeChildToParent[0], F_SETFL, fcntl(ClientConsole[socketID].pipeChildToParent[0], F_GETFL) | O_NONBLOCK);
+
+                                    ClientConsole[socketID].pipeActive = true;
+
+                                    if(pthread_create(&newConsoleThread,NULL,NewConsole, (void *)&socketID) !=0)
+                                    {
+                                        serverOutput.append("\nFailed to generate pthread.\n");
+                                        serverOutput = Crypt->EncryptString(serverOutput); // Encryption
+                                        serverOutput.append("|");
+
+                                        send(Service->clients[socketID],serverOutput.c_str(), serverOutput.length(), 0);
+
+                                        SendEndOfTransmissionCode(socketID);
+                                        bytesReceived = 0;
+                                    }
+                                }
                             }
                             else
                             {
-                                threadData.input = sPacket;
-                                threadData.socketID = socketID;
-                                threadData.username = username;
-                                threadData.hostname = hostname;
-
-                                if(pthread_create(&newConsoleThread,NULL,NewConsole,(void *) &threadData) !=0)
-                                {
-                                    output.append("\nFailed to generate pthread.\n");
-                                    output = Crypt->EncryptString(output); // Encryption
-                                    output.append("|");
-
-                                    send(Service->clients[socketID],output.c_str(), output.length(), 0);
-
-                                    // Send end of transmission code
-                                    output = "EOT";
-                                    send(Service->clients[socketID], output.c_str(), output.length(), 0);
-                                    bytesReceived = 0;
-                                }
+                                ClientConsole[socketID].nextCommand = sPacket + "\n";
+                                ClientConsole[socketID].hasNextCommand = true;
                             }
                         }
                     }
-                    break;
-                    case 'X': // Kill Thread
-                    {
-                        sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\n'), sPacket.end()); // Remove newline character
-                        sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\r'), sPacket.end()); // Remove return character
+                }
+                break;
+                case 'X': // Kill Thread
+                {
+                    sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\n'), sPacket.end()); // Remove newline character
+                    sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\r'), sPacket.end()); // Remove return character
 
-                        ClientCodes[socketID] = 1; // Close thread
-                        pthread_join(newConsoleThread, NULL); // Wait for thread to close
-                    }
-                    break;
-                    case 'C': // Close
-                    {
-                        sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\n'), sPacket.end()); // Remove newline character
-                        sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\r'), sPacket.end()); // Remove return character
+                    ClientConsole[socketID].exitCode = 1; // Close thread
+                    pthread_join(newConsoleThread, NULL); // Wait for thread to close
+                }
+                break;
+                case 'C': // Close
+                {
+                    sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\n'), sPacket.end()); // Remove newline character
+                    sPacket.erase(std::remove(sPacket.begin(), sPacket.end(), '\r'), sPacket.end()); // Remove return character
 
-                        if(sPacket.length() == 1)
-                            bytesReceived = 0;
-                    }
-                    break;
-
-                    default: // Client without correct encryption code
+                    if(sPacket.length() == 1)
                         bytesReceived = 0;
-                        break;
+                }
+                break;
+
+                default: // Client without correct encryption code
+                    bytesReceived = 0;
+                    break;
                 }
             }
             else // Client without correct encryption code
@@ -305,7 +299,7 @@ void *NewClient(void *ptr)
 
         memset(packet,0,sizeof(packet));
         sPacket.clear();
-        output.clear();
+        serverOutput.clear();
     }
     while (bytesReceived != 0); // Keep checking for data until, nothing is received.
 
@@ -318,141 +312,164 @@ void *NewClient(void *ptr)
     return 0;
 }
 
-void *NewConsole(void *ptr)
+void SendTerminalServerOutput(int socketID)
 {
-    int pipes[2];
-    pid_t processID;
-
     std::string serverOutput = "";
-    std::string sPacket;
 
-    unsigned int commandWaitTimer = 0;
-    unsigned int timerStart = 0;
-
-    ThreadData *threadData = (ThreadData *)ptr;
-
-    serverOutput.append("\n" + threadData->username + "@" + threadData->hostname + ":"
-                             + threadData->directory + "$ " + threadData->input);
-
-    sPacket.append(threadData->input);
-    sPacket.append(" 2>&1"); // Get output of stderr along with stdout
+    serverOutput.append("\n" + ClientConsole[socketID].username + "@" + ClientConsole[socketID].hostname + ":"
+                              + ClientConsole[socketID].directory + "$ " + ClientConsole[socketID].command);
 
     serverOutput.append("\n\n");
     serverOutput = Crypt->EncryptString(serverOutput);
     serverOutput.append("|");
 
-    send(Service->clients[threadData->socketID],serverOutput.c_str(), serverOutput.length(), 0);
+    send(Service->clients[socketID],serverOutput.c_str(), serverOutput.length(), 0);
 
-    chdir(threadData->directory.c_str());
+    chdir(ClientConsole[socketID].directory.c_str());
+}
 
-    if(pipe(pipes) != -1)
+void SendEndOfTransmissionCode(int socketID)
+{
+    send(Service->clients[socketID], "EOT", 3, 0);
+}
+
+void *NewConsole(void *ptr)
+{
+    std::string serverOutput = "";
+    std::string sPacket;
+
+    unsigned short socketID = *((int *)ptr);
+
+    SendTerminalServerOutput(socketID);
+
+    sPacket.append(ClientConsole[socketID].command);
+    sPacket.append(" 2>&1"); // Get serverOutput of stderr along with stdout
+
+    if((ClientConsole[socketID].activePipeID = fork()) == 0) // Child
     {
-        if(fcntl(pipes[0], F_SETFL, fcntl(pipes[0], F_GETFL) | O_NONBLOCK) != -1) // Set output pipe to non-blocking
+        if (dup2(ClientConsole[socketID].pipeParentToChild[0], 0) != 0 ||
+                close(ClientConsole[socketID].pipeParentToChild[0]) != 0 ||
+                close(ClientConsole[socketID].pipeParentToChild[1]) != 0)
         {
-            if ((processID = fork()) != -1) // Create pipes
-            {
-                // Read from pipes
-                if(processID == 0)  // Child
-                {
-                    close(pipes[0]);
-                    dup2(pipes[1], 1);
-
-                    execlp("/bin/sh","/bin/sh","-c",sPacket.c_str(),NULL);
-                    exit(0);
-                }
-                else  // Parent
-                {
-                    close(pipes[1]);
-
-                    int totalPipeBytes = 0;
-                    char processPath[100] = {0};
-                    char readPipeBuffer[513] = {0};
-
-                    FILE *proc;
-                    ssize_t bytesRead;
-                    bool processOpen = true;
-
-                    sprintf(processPath, "/proc/%d/status", processID + 1);
-                    timerStart = Service->GetProcessMiliseconds();
-
-                    do
-                    {
-                        commandWaitTimer = (Service->GetProcessMiliseconds() - timerStart);
-
-                        bytesRead = read(pipes[0], readPipeBuffer, 512);
-
-                        if (bytesRead == -1 && errno == EAGAIN)  // No data available from pipe
-                        {
-                            if((commandWaitTimer > 6000 && !processOpen) || (totalPipeBytes < 512 && !processOpen)) // No data left in pipe
-                            {
-                                break;
-                            }
-                            else if(commandWaitTimer > 1000 && processOpen)
-                            {
-                                proc = fopen(processPath,"r"); // Check to see if process is running
-
-                                if (proc == NULL)
-                                {
-                                    processOpen = false;
-                                }
-                                else
-                                {
-                                    fclose(proc);
-                                }
-                            }
-
-                            if(ClientCodes[threadData->socketID] == 1) // || iCommandWaitTimer > 1500)
-                            {
-                                processOpen = false;
-                                break;
-                            }
-                        }
-                        else if (bytesRead > 0) // Data available from pipe
-                        {
-                            serverOutput = "";
-                            serverOutput.assign(readPipeBuffer);
-
-                            totalPipeBytes += strlen(readPipeBuffer);
-
-                            serverOutput = Crypt->EncryptString(serverOutput);
-                            serverOutput.append("|");
-
-                            send(Service->clients[threadData->socketID],serverOutput.c_str(), serverOutput.length(), 0);
-                        }
-                        else // Pipe closed
-                        {
-                            break;
-                        }
-
-                        serverOutput = "";
-                        memset(readPipeBuffer, 0, sizeof(readPipeBuffer));
-
-                        usleep(10);
-                    }
-                    while(1);
-
-                    close(pipes[0]);
-
-                    kill(processID, SIGKILL); // Kill shell pipe process
-                    kill(processID + 1, SIGKILL); // Kill pipe process
-
-                    //serverOutput.append("\n"); //  For debugging purposes
-                    //serverOutput.append(sPacket);
-                }
-            }
+            exit(1);
         }
-        else
+        if (dup2(ClientConsole[socketID].pipeChildToParent[1], 1) != 1 ||
+                close(ClientConsole[socketID].pipeChildToParent[1]) != 0 ||
+                close(ClientConsole[socketID].pipeChildToParent[0]) != 0)
         {
-            close(pipes[0]);
-            close(pipes[1]);
+            exit(1);
         }
+
+        execlp("/bin/sh","/bin/sh","-c",sPacket.c_str(),NULL);
+        exit(0);
+    }
+    else  // Parent
+    {
+        close(ClientConsole[socketID].pipeParentToChild[0]);
+        close(ClientConsole[socketID].pipeChildToParent[1]);
+
+        HandleClientPipe(socketID);
+        wait(NULL);
     }
 
-    // Send end of transmission code
-    serverOutput = "EOT";
-    send(Service->clients[threadData->socketID], serverOutput.c_str(), serverOutput.length(), 0);
-    ClientCodes[threadData->socketID] = 0; // Clear code
+    close(ClientConsole[socketID].pipeParentToChild[0]);
+    close(ClientConsole[socketID].pipeParentToChild[1]);
+    close(ClientConsole[socketID].pipeChildToParent[0]);
+    close(ClientConsole[socketID].pipeChildToParent[1]);
 
     pthread_exit(NULL);
 }
 
+void HandleClientPipe(unsigned short socketID)
+{
+    std::string serverOutput = "";
+
+    int totalPipeBytes = 0;
+    char processPath[100] = {0};
+    char readPipeBuffer[513] = {0};
+
+    unsigned int commandWaitTimer = 0;
+    unsigned int timerStart = 0;
+
+    FILE *proc;
+    ssize_t bytesRead;
+    bool processOpen = true;
+
+    int pipeProcessID = ClientConsole[socketID].activePipeID;
+    sprintf(processPath, "/proc/%d/status", pipeProcessID + 1);
+
+    timerStart = Service->GetProcessMiliseconds();
+
+    do
+    {
+        commandWaitTimer = (Service->GetProcessMiliseconds() - timerStart);
+        bytesRead = read(ClientConsole[socketID].pipeChildToParent[0], readPipeBuffer, 512);
+        if (bytesRead == -1 && errno == EAGAIN)  // No data available from pipe
+        {
+            if(commandWaitTimer > 1000 && processOpen)
+            {
+                proc = fopen(processPath,"r"); // Check to see if process is running
+
+                if (proc == NULL)
+                {
+                    processOpen = false;
+                }
+                else
+                {
+                    fclose(proc);
+                }
+            }
+
+            if(ClientConsole[socketID].exitCode == 1) // || iCommandWaitTimer > 1500)
+            {
+                processOpen = false;
+                break;
+            }
+        }
+        else if (bytesRead > 0) // Data available from pipe
+        {
+            serverOutput = "";
+            serverOutput.assign(readPipeBuffer);
+
+            totalPipeBytes += strlen(readPipeBuffer);
+
+            serverOutput = Crypt->EncryptString(serverOutput);
+            serverOutput.append("|");
+            send(Service->clients[socketID],serverOutput.c_str(), serverOutput.length(), 0);
+        }
+        else // Pipe closed
+        {
+            break;
+        }
+
+        if(ClientConsole[socketID].hasNextCommand)
+        {
+            write(ClientConsole[socketID].pipeParentToChild[1], ClientConsole[socketID].nextCommand.c_str(), (strlen(ClientConsole[socketID].nextCommand.c_str())));
+            fsync(ClientConsole[socketID].pipeParentToChild[1]);
+            ClientConsole[socketID].hasNextCommand = false;
+            ClientConsole[socketID].nextCommand = "";
+        }
+
+        serverOutput = "";
+        memset(readPipeBuffer, 0, sizeof(readPipeBuffer));
+
+        usleep(10);
+    }
+    while(1);
+
+    kill(pipeProcessID, SIGKILL); // Kill shell pipe process
+    kill(pipeProcessID + 1, SIGKILL); // Kill pipe process
+
+    serverOutput = "\n[Process " + std::to_string(pipeProcessID) + " killed]";
+    serverOutput = Crypt->EncryptString(serverOutput);
+    serverOutput.append("|");
+    send(Service->clients[socketID],serverOutput.c_str(), serverOutput.length(), 0);
+
+    SendEndOfTransmissionCode(socketID);
+
+    ClientConsole[socketID].exitCode = 0; // Clear code
+    ClientConsole[socketID].pipeActive = false;
+
+    //serverOutput.append("\n"); //  For debugging purposes
+    //serverOutput.append(sPacket);
+}
